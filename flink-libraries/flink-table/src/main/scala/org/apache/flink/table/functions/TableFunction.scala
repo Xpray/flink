@@ -19,7 +19,9 @@
 package org.apache.flink.table.functions
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.table.expressions.{Expression, TableFunctionCall}
+import org.apache.flink.table.api.{Table, TableEnvironment}
+import org.apache.flink.table.expressions.{Expression, TableFunctionCall, UnresolvedFieldReference}
+import org.apache.flink.table.plan.logical.LogicalTableFunctionCall
 import org.apache.flink.util.Collector
 
 /**
@@ -80,18 +82,46 @@ import org.apache.flink.util.Collector
 abstract class TableFunction[T] extends UserDefinedFunction {
 
   /**
+    * tableEnv is needed when create a Table
+    */
+  @transient var tableEnv: Option[TableEnvironment] = None
+
+  /**
+    * functionName is needed when create a LogicalTableFunctionCall
+    */
+  @transient var functionName: Option[String] = None
+
+  /**
+    * fields is needed when create a LogicalTableFunctionCall
+    * if typeInfo is a pojo, then fields can be ignored
+    */
+  @transient var fields: Seq[Expression] = Seq.empty
+
+  /**
     * Creates a call to a [[TableFunction]] in Scala Table API.
     *
     * @param params actual parameters of function
     * @return [[Expression]] in form of a [[TableFunctionCall]]
     */
-  final def apply(params: Expression*)(implicit typeInfo: TypeInformation[T]): Expression = {
-    val resultType = if (getResultType == null) {
-      typeInfo
-    } else {
-      getResultType
+  final def apply(params: Expression*)(implicit typeInfo: TypeInformation[T]): Table = {
+
+    if (tableEnv.isEmpty || functionName.isEmpty) {
+      throw new RuntimeException("function has not been registered")
     }
-    TableFunctionCall(getClass.getSimpleName, this, params, resultType)
+
+    val resultType = if (getResultType == null) typeInfo else getResultType
+
+    new Table(
+      tableEnv.get,
+      LogicalTableFunctionCall(
+        functionName.get,
+        this,
+        params.toList,
+        resultType,
+        fields.map(_.asInstanceOf[UnresolvedFieldReference].name).toArray,
+        child = null // temporarily null
+      )
+    )
   }
 
   override def toString: String = getClass.getCanonicalName

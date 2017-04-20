@@ -62,7 +62,8 @@ class DataStreamCorrelateRule
         case calc: FlinkLogicalCalc =>
           convertToCorrelate(
             calc.getInput.asInstanceOf[RelSubset].getOriginal,
-            Some(calc.getProgram.expandLocalRef(calc.getProgram.getCondition)))
+            if (calc.getProgram.getCondition == null) None
+            else Some(calc.getProgram.expandLocalRef(calc.getProgram.getCondition)))
 
         case scan: FlinkLogicalTableFunctionScan =>
           new DataStreamCorrelate(

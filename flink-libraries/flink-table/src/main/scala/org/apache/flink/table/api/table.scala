@@ -309,6 +309,42 @@ class Table(
   }
 
   /**
+    * Joins this [[Table]] to a user-defined [[org.apache.calcite.schema.TableFunction]]. Similar
+    * to an SQL left outer join with ON TRUE, but it works with a table function. It returns all
+    * the rows from the outer table (table on the left of the operator), and rows that do not match
+    * the condition from the table function (which is defined in the expression on the right
+    * side of the operator). Rows with no matching condition are filled with null values.
+    *
+    * Scala Example:
+    * {{{
+    *   class MySplitUDTF extends TableFunction[String] {
+    *     def eval(str: String): Unit = {
+    *       str.split("#").foreach(collect)
+    *     }
+    *   }
+    *
+    *   val split = new MySplitUDTF()
+    *   table.leftOuterJoin(split('c) as ('s)).select('a,'b,'c,'s)
+    * }}}
+    *
+    * Java Example:
+    * {{{
+    *   class MySplitUDTF extends TableFunction<String> {
+    *     public void eval(String str) {
+    *       str.split("#").forEach(this::collect);
+    *     }
+    *   }
+    *
+    *   TableFunction<String> split = new MySplitUDTF();
+    *   tableEnv.registerFunction("split", split);
+    *   table.leftOuterJoin(tableApply("split(c) as (s)")).select("a, b, c, s");
+    * }}}
+    */
+  def leftOuterJoin(right: Table): Table = {
+    join(right, None, JoinType.LEFT_OUTER)
+  }
+
+  /**
     * Joins two [[Table]]s. Similar to an SQL left outer join. The fields of the two joined
     * operations must not overlap, use [[as]] to rename fields if necessary.
     *
@@ -420,9 +456,34 @@ class Table(
     if (right.tableEnv != this.tableEnv) {
       throw new ValidationException("Only tables from the same TableEnvironment can be joined.")
     }
+
+
+    /**
+      * validate LogicalTableFunctionCall for now
+      */
+    val rule: PartialFunction[LogicalNode, LogicalNode] = {
+      case udtf: LogicalTableFunctionCall if udtf.child == null => {
+        new LogicalTableFunctionCall(
+          udtf.functionName,
+          udtf.tableFunction,
+          udtf.parameters,
+          udtf.resultType,
+          udtf.fieldNames,
+          this.logicalPlan
+        ).validate(tableEnv)
+      }
+    }
+
+    val newRightPlan = right.logicalPlan.postOrderTransform(rule)
+    /**
+      * if right plan has a unresolved LogicalTableFunctionCall
+      * correlated shall be true
+      */
+    val correlated = !newRightPlan.fastEquals(right.logicalPlan)
+
     new Table(
       tableEnv,
-      Join(this.logicalPlan, right.logicalPlan, joinType, joinPredicate, correlated = false)
+      Join(this.logicalPlan, newRightPlan, joinType, joinPredicate, correlated)
         .validate(tableEnv))
   }
 

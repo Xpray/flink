@@ -47,6 +47,9 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
     val func0 = new TableFunc0
     val pojoFunc0 = new PojoTableFunc()
 
+    tEnv.registerTableFunction("func0", func0)
+    tEnv.registerTableFunction("pojoFunc0", pojoFunc0)
+
     val result = t
       .join(func0('c) as('d, 'e))
       .select('c, 'd, 'e)
@@ -67,6 +70,7 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
     val t = testData(env).toTable(tEnv).as('a, 'b, 'c)
     val func0 = new TableFunc0
 
+    tEnv.registerTableFunction("func0", func0)
     val result = t
       .leftOuterJoin(func0('c) as('d, 'e))
       .select('c, 'd, 'e)
@@ -84,7 +88,7 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
   @Test
   def testUserDefinedTableFunctionWithParameter(): Unit = {
     val tableFunc1 = new RichTableFunc1
-    tEnv.registerFunction("RichTableFunc1", tableFunc1)
+    tEnv.registerTableFunction("RichTableFunc1", tableFunc1)
     UserDefinedFunctionTestUtils.setJobParameters(env, Map("word_separator" -> " "))
     StreamITCase.testResults = mutable.MutableList()
 
@@ -105,7 +109,7 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
   def testUserDefinedTableFunctionWithUserDefinedScalarFunction(): Unit = {
     val tableFunc1 = new RichTableFunc1
     val richFunc2 = new RichFunc2
-    tEnv.registerFunction("RichTableFunc1", tableFunc1)
+    tEnv.registerTableFunction("RichTableFunc1", tableFunc1)
     tEnv.registerFunction("RichFunc2", richFunc2)
     UserDefinedFunctionTestUtils.setJobParameters(
       env,
@@ -138,6 +142,9 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
     val func30 = new TableFunc3(null)
     val func31 = new TableFunc3("OneConf_")
     val func32 = new TableFunc3("TwoConf_", config)
+    tEnv.registerTableFunction("func30", func30)
+    tEnv.registerTableFunction("func31", func31)
+    tEnv.registerTableFunction("func32", func32)
 
     val result = t
       .join(func30('c) as('d, 'e))
@@ -186,7 +193,7 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
   @Test
   def testTableFunctionWithVariableArguments(): Unit = {
     val varArgsFunc0 = new VarArgsFunc0
-    tEnv.registerFunction("VarArgsFunc0", varArgsFunc0)
+    tEnv.registerTableFunction("VarArgsFunc0", varArgsFunc0)
 
     val result = testData(env)
       .toTable(tEnv, 'a, 'b, 'c)

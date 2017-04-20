@@ -20,7 +20,7 @@ package org.apache.flink.table.api.java
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.apache.flink.api.java.{DataSet, ExecutionEnvironment}
-import org.apache.flink.table.expressions.ExpressionParser
+import org.apache.flink.table.expressions.{Expression, ExpressionParser}
 import org.apache.flink.table.api._
 import org.apache.flink.table.functions.TableFunction
 
@@ -177,5 +177,21 @@ class BatchTableEnvironment(
       .asInstanceOf[TypeInformation[T]]
 
     registerTableFunctionInternal[T](name, tf)
+  }
+
+  /**
+    * Registers a [[TableFunction]] under a unique name in the TableEnvironment's catalog.
+    * Registered functions can be referenced in SQL queries.
+    * @param name The name under which the function is registered
+    * @param tf The TableFunction to register
+    * @param fields TableFunction's apply shall be viewed as a Table, so output schema is needed
+    */
+  def registerTableFunction[T: TypeInformation](name: String,
+                                                tf: TableFunction[T],
+                                                fields: Expression*): Unit = {
+    registerTableFunctionInternal(name, tf)
+    tf.tableEnv = Some(this)
+    tf.fields = fields
+    tf.functionName = Some(name)
   }
 }
