@@ -153,19 +153,4 @@ class StreamTableEnvironment(
     registerTableFunctionInternal(name, tf)
   }
 
-  /**
-    * Registers a [[TableFunction]] under a unique name in the TableEnvironment's catalog.
-    * Registered functions can be referenced in SQL queries.
-    * @param name The name under which the function is registered
-    * @param tf The TableFunction to register
-    * @param fields TableFunction's apply shall be viewed as a Table, so output schema is needed
-    */
-  def registerTableFunction[T: TypeInformation](name: String,
-                                                tf: TableFunction[T],
-                                                fields: Expression*): Unit = {
-    registerTableFunctionInternal(name, tf)
-    tf.tableEnv = Some(this)
-    tf.fields = fields
-    tf.functionName = Some(name)
-  }
 }

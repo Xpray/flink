@@ -82,22 +82,6 @@ import org.apache.flink.util.Collector
 abstract class TableFunction[T] extends UserDefinedFunction {
 
   /**
-    * tableEnv is needed when create a Table
-    */
-  @transient var tableEnv: Option[TableEnvironment] = None
-
-  /**
-    * functionName is needed when create a LogicalTableFunctionCall
-    */
-  @transient var functionName: Option[String] = None
-
-  /**
-    * fields is needed when create a LogicalTableFunctionCall
-    * if typeInfo is a pojo, then fields can be ignored
-    */
-  @transient var fields: Seq[Expression] = Seq.empty
-
-  /**
     * Creates a call to a [[TableFunction]] in Scala Table API.
     *
     * @param params actual parameters of function
@@ -105,20 +89,16 @@ abstract class TableFunction[T] extends UserDefinedFunction {
     */
   final def apply(params: Expression*)(implicit typeInfo: TypeInformation[T]): Table = {
 
-    if (tableEnv.isEmpty || functionName.isEmpty) {
-      throw new RuntimeException("function has not been registered")
-    }
-
     val resultType = if (getResultType == null) typeInfo else getResultType
 
     new Table(
-      tableEnv.get,
+      null, // temporarily null
       LogicalTableFunctionCall(
-        functionName.get,
+        this.getClass.getCanonicalName,
         this,
         params.toList,
         resultType,
-        fields.map(_.asInstanceOf[UnresolvedFieldReference].name).toArray,
+        Array.empty,
         child = null // temporarily null
       )
     )

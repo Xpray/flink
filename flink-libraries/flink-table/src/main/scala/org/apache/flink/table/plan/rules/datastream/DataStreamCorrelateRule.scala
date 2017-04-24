@@ -59,11 +59,14 @@ class DataStreamCorrelateRule
         case rel: RelSubset =>
           convertToCorrelate(rel.getRelList.get(0), condition)
 
-        case calc: FlinkLogicalCalc =>
+        case calc: FlinkLogicalCalc => {
+          val condition = if (calc.getProgram.getCondition == null) None
+          else Some(calc.getProgram.expandLocalRef(calc.getProgram.getCondition))
           convertToCorrelate(
             calc.getInput.asInstanceOf[RelSubset].getOriginal,
-            if (calc.getProgram.getCondition == null) None
-            else Some(calc.getProgram.expandLocalRef(calc.getProgram.getCondition)))
+            condition
+          )
+        }
 
         case scan: FlinkLogicalTableFunctionScan =>
           new DataStreamCorrelate(

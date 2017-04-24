@@ -52,15 +52,14 @@ class DataSetUserDefinedFunctionITCase(
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
 
     val func1 = new TableFunc1
-    tableEnv.registerTableFunction("func1", func1, 's)
-    val result = in.join(func1('c) as 's).select('c, 's).toDataSet[Row]
+    val result = in.join(func1('c) as 's select('s)).select('c, 's).toDataSet[Row]
     val results = result.collect()
     val expected = "Jack#22,Jack\n" + "Jack#22,22\n" + "John#19,John\n" + "John#19,19\n" +
       "Anna#44,Anna\n" + "Anna#44,44\n"
     TestBaseUtils.compareResultAsText(results.asJava, expected)
 
     // with overloading
-    val result2 = in.join(func1('c, "$")).select('c, 's).toDataSet[Row]
+    val result2 = in.join(func1('c, "$") as 's).select('c, 's).toDataSet[Row]
     val results2 = result2.collect()
     val expected2 = "Jack#22,$Jack\n" + "Jack#22,$22\n" + "John#19,$John\n" +
       "John#19,$19\n" + "Anna#44,$Anna\n" + "Anna#44,$44\n"
@@ -74,7 +73,6 @@ class DataSetUserDefinedFunctionITCase(
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
 
     val func2 = new TableFunc2
-    tableEnv.registerTableFunction("func2", func2)
     val result = in.leftOuterJoin(func2('c) as ('s, 'l)).select('c, 's, 'l).toDataSet[Row]
     val results = result.collect()
     val expected = "Jack#22,Jack,4\n" + "Jack#22,22,2\n" + "John#19,John,4\n" +
@@ -88,8 +86,6 @@ class DataSetUserDefinedFunctionITCase(
     val tableEnv = TableEnvironment.getTableEnvironment(env, config)
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
     val func0 = new TableFunc0
-
-    tableEnv.registerTableFunction("func0", func0)
 
     val result = in
       .join(func0('c) as ('name, 'age))
@@ -108,7 +104,6 @@ class DataSetUserDefinedFunctionITCase(
     val tableEnv = TableEnvironment.getTableEnvironment(env, config)
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
     val func2 = new TableFunc2
-    tableEnv.registerTableFunction("func2", func2)
     val result = in
       .join(func2('c) as ('name, 'len))
       .select('c, 'name, 'len)
@@ -127,7 +122,6 @@ class DataSetUserDefinedFunctionITCase(
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
 
     val hierarchy = new HierarchyTableFunction
-    tableEnv.registerTableFunction("hierarchy", hierarchy)
     val result = in
       .join(hierarchy('c) as ('name, 'adult, 'len))
       .select('c, 'name, 'adult, 'len)
@@ -146,7 +140,6 @@ class DataSetUserDefinedFunctionITCase(
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
 
     val pojo = new PojoTableFunc()
-    tableEnv.registerTableFunction("pojo", pojo)
     val result = in
       .join(pojo('c))
       .where(('age > 20))
@@ -165,8 +158,6 @@ class DataSetUserDefinedFunctionITCase(
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
     val func1 = new TableFunc1
 
-    tableEnv.registerTableFunction("func1", func1)
-
     val result = in
       .join(func1('c.substring(2)) as 's)
       .select('c, 's)
@@ -184,7 +175,6 @@ class DataSetUserDefinedFunctionITCase(
     val tableEnv = TableEnvironment.getTableEnvironment(env, config)
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
     val func0 = new JavaTableFunc0
-    tableEnv.registerTableFunction("func0", func0)
 
     val result = in
         .where('a === 1)
@@ -205,7 +195,6 @@ class DataSetUserDefinedFunctionITCase(
     val env = ExecutionEnvironment.getExecutionEnvironment
     val tEnv = TableEnvironment.getTableEnvironment(env)
     val richTableFunc1 = new RichTableFunc1
-    tEnv.registerTableFunction("RichTableFunc1", richTableFunc1)
     UserDefinedFunctionTestUtils.setJobParameters(env, Map("word_separator" -> "#"))
 
     val result = testData(env)
@@ -223,7 +212,6 @@ class DataSetUserDefinedFunctionITCase(
     val env = ExecutionEnvironment.getExecutionEnvironment
     val tEnv = TableEnvironment.getTableEnvironment(env)
     val richTableFunc1 = new RichTableFunc1
-    tEnv.registerTableFunction("RichTableFunc1", richTableFunc1)
     val richFunc2 = new RichFunc2
     tEnv.registerFunction("RichFunc2", richFunc2)
     UserDefinedFunctionTestUtils.setJobParameters(
@@ -248,11 +236,6 @@ class DataSetUserDefinedFunctionITCase(
     val func30 = new TableFunc3(null)
     val func31 = new TableFunc3("OneConf_")
     val func32 = new TableFunc3("TwoConf_")
-
-    tableEnv.registerTableFunction("func30", func30)
-    tableEnv.registerTableFunction("func31", func31)
-    tableEnv.registerTableFunction("func32", func32)
-
 
     val result = in
       .join(func30('c) as('d, 'e))
@@ -297,7 +280,6 @@ class DataSetUserDefinedFunctionITCase(
     val env = ExecutionEnvironment.getExecutionEnvironment
     val tableEnv = TableEnvironment.getTableEnvironment(env, config)
     val varArgsFunc0 = new VarArgsFunc0
-    tableEnv.registerTableFunction("VarArgsFunc0", varArgsFunc0)
 
     val result = testData(env)
       .toTable(tableEnv, 'a, 'b, 'c)

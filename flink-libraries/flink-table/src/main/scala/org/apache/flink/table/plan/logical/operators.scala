@@ -446,8 +446,7 @@ case class Join(
     left.output.map(_.name).toSet.intersect(right.output.map(_.name).toSet)
 
   override def validate(tableEnv: TableEnvironment): LogicalNode = {
-    if (tableEnv.isInstanceOf[StreamTableEnvironment]
-      && !testTableFunctionExistence(right)) {
+    if (tableEnv.isInstanceOf[StreamTableEnvironment] && !testTableFunctionExistence(right)) {
       failValidation(s"Join on stream tables is currently not supported.")
     }
 

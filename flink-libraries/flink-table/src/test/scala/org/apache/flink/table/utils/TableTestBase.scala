@@ -135,13 +135,6 @@ case class BatchTableTestUtil() extends TableTestUtil {
     t
   }
 
-  def addTableFunction[T: TypeInformation](name: String,
-                                           function: TableFunction[T],
-                                           fields: Expression*): TableFunction[T] = {
-    tEnv.registerTableFunction(name, function, fields: _*)
-    function
-  }
-
   def addFunction[T: TypeInformation](
       name: String,
       function: TableFunction[T])
@@ -204,13 +197,6 @@ case class StreamTableTestUtil() extends TableTestUtil {
       function: TableFunction[T])
     : TableFunction[T] = {
     tEnv.registerFunction(name, function)
-    function
-  }
-
-  def addTableFunction[T: TypeInformation](name: String,
-                                           function: TableFunction[T],
-                                           fields: Expression*): TableFunction[T] = {
-    tEnv.registerTableFunction(name, function, fields: _*)
     function
   }
 
