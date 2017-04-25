@@ -52,7 +52,7 @@ class DataSetUserDefinedFunctionITCase(
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
 
     val func1 = new TableFunc1
-    val result = in.join(func1('c) as 's select('s)).select('c, 's).toDataSet[Row]
+    val result = in.join(func1('c) as 's).select('c, 's).toDataSet[Row]
     val results = result.collect()
     val expected = "Jack#22,Jack\n" + "Jack#22,22\n" + "John#19,John\n" + "John#19,19\n" +
       "Anna#44,Anna\n" + "Anna#44,44\n"

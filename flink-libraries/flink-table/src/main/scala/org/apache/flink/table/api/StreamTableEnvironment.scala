@@ -376,31 +376,4 @@ abstract class StreamTableEnvironment(
         System.lineSeparator +
         s"$sqlPlan"
   }
-
-  final def tableFunctionToTable(udtf: String): Table = {
-    var alias: Option[Seq[String]] = None
-
-    // unwrap an Expression until we get a TableFunctionCall
-    def unwrap(expr: Expression): TableFunctionCall = expr match {
-      case Alias(child, name, extraNames) =>
-        alias = Some(Seq(name) ++ extraNames)
-        unwrap(child)
-      case Call(name, args) =>
-        val function = this.getFunctionCatalog.lookupFunction(name, args)
-        unwrap(function)
-      case c: TableFunctionCall => c
-      case _ =>
-        throw new TableException(
-          "Cross/Outer Apply operators only accept expressions that define table functions.")
-    }
-
-    val tableFunctionCall = unwrap(ExpressionParser.parseExpression(udtf))
-      .as(alias).toLogicalTableFunctionCall(null)
-
-    new Table(
-      this,
-      tableFunctionCall
-    )
-  }
-
 }

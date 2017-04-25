@@ -17,17 +17,18 @@
  */
 package org.apache.flink.table.api.scala.stream.table
 
-import org.apache.flink.api.scala._
-import org.apache.flink.types.Row
 import org.apache.flink.api.java.typeutils.RowTypeInfo
-import org.apache.flink.table.api.scala._
-import org.apache.flink.table.api._
-import org.apache.flink.table.expressions.utils._
-import org.apache.flink.table.utils.TableTestUtil._
-import org.apache.flink.table.utils._
+import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.datastream.{DataStream => JDataStream}
 import org.apache.flink.streaming.api.environment.{StreamExecutionEnvironment => JavaExecutionEnv}
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment => ScalaExecutionEnv}
+import org.apache.flink.table.api._
+import org.apache.flink.table.api.scala._
+import org.apache.flink.table.api.utils.TableFunctionToTable
+import org.apache.flink.table.expressions.utils._
+import org.apache.flink.table.utils.TableTestUtil._
+import org.apache.flink.table.utils._
+import org.apache.flink.types.Row
 import org.junit.Assert.{assertTrue, fail}
 import org.junit.Test
 import org.mockito.Mockito._
@@ -57,20 +58,22 @@ class UserDefinedTableFunctionTest extends TableTestBase {
     val func1 = new TableFunc1
     javaTableEnv.registerFunction("func1", func1)
     var scalaTable = in1.join(func1('c) as 's).select('c, 's)
-    var javaTable = in2.join(javaTableEnv.tableFunctionToTable("func1(c)").as("s")).select("c, s")
+    var javaTable = in2.join(TableFunctionToTable(javaTableEnv, "func1(c)")
+      .as("s")).select("c, s")
     verifyTableEquals(scalaTable, javaTable)
 
     // test left outer join
     scalaTable = in1.leftOuterJoin(func1('c) as 's).select('c, 's)
     javaTable = in2.leftOuterJoin(
-      javaTableEnv.tableFunctionToTable("func1(c)")
+      TableFunctionToTable(javaTableEnv, "func1(c)")
         .as("s")
     ).select("c, s")
     verifyTableEquals(scalaTable, javaTable)
 
     // test overloading
     scalaTable = in1.join(func1('c, "$") as 's).select('c, 's)
-    javaTable = in2.join(javaTableEnv.tableFunctionToTable("func1(c, '$')").as("s")).select("c, s")
+    javaTable = in2.join(TableFunctionToTable(javaTableEnv, "func1(c, '$')")
+      .as("s")).select("c, s")
     verifyTableEquals(scalaTable, javaTable)
 
     // test custom result type
@@ -78,7 +81,7 @@ class UserDefinedTableFunctionTest extends TableTestBase {
     javaTableEnv.registerFunction("func2", func2)
     scalaTable = in1.join(func2('c) as ('name, 'len)).select('c, 'name, 'len)
     javaTable = in2.join(
-      javaTableEnv.tableFunctionToTable("func2(c)")
+      TableFunctionToTable(javaTableEnv, "func2(c)")
         .as("name, len"))
       .select("c, name, len")
     verifyTableEquals(scalaTable, javaTable)
@@ -88,7 +91,8 @@ class UserDefinedTableFunctionTest extends TableTestBase {
     javaTableEnv.registerFunction("hierarchy", hierarchy)
     scalaTable = in1.join(hierarchy('c) as ('name, 'len, 'adult))
       .select('c, 'name, 'len, 'adult)
-    javaTable = in2.join(javaTableEnv.tableFunctionToTable("hierarchy(c)").as("name, len, adult"))
+    javaTable = in2.join(TableFunctionToTable(javaTableEnv, "hierarchy(c)")
+      .as("name, len, adult"))
       .select("c, name, len, adult")
     verifyTableEquals(scalaTable, javaTable)
 
@@ -97,21 +101,21 @@ class UserDefinedTableFunctionTest extends TableTestBase {
     javaTableEnv.registerFunction("pojo", pojo)
     scalaTable = in1.join(pojo('c))
       .select('c, 'name, 'age)
-    javaTable = in2.join(javaTableEnv.tableFunctionToTable("pojo(c)"))
+    javaTable = in2.join(TableFunctionToTable(javaTableEnv, "pojo(c)"))
       .select("c, name, age")
     verifyTableEquals(scalaTable, javaTable)
 
     // test with filter
     scalaTable = in1.join(func2('c) as ('name, 'len))
       .select('c, 'name, 'len).filter('len > 2)
-    javaTable = in2.join(javaTableEnv.tableFunctionToTable("func2(c)") as ("name, len"))
+    javaTable = in2.join(TableFunctionToTable(javaTableEnv, "func2(c)") as ("name, len"))
       .select("c, name, len").filter("len > 2")
     verifyTableEquals(scalaTable, javaTable)
 
     // test with scalar function
     scalaTable = in1.join(func1('c.substring(2)) as 's)
       .select('a, 'c, 's)
-    javaTable = in2.join(javaTableEnv.tableFunctionToTable("func1(substring(c, 2))") as ("s"))
+    javaTable = in2.join(TableFunctionToTable(javaTableEnv, "func1(substring(c, 2))") as ("s"))
       .select("a, c, s")
     verifyTableEquals(scalaTable, javaTable)
 
@@ -152,7 +156,7 @@ class UserDefinedTableFunctionTest extends TableTestBase {
     //============ throw exception when table function is not registered =========
     // Java Table API call
     expectExceptionThrown(
-      t.join(tEnv.tableFunctionToTable("nonexist(a)")
+      t.join(TableFunctionToTable(tEnv, "nonexist(a)")
       ), "Undefined function: NONEXIST")
     // SQL API call
     expectExceptionThrown(
@@ -164,7 +168,7 @@ class UserDefinedTableFunctionTest extends TableTestBase {
     util.tEnv.registerFunction("func0", Func0)
     // Java Table API call
     expectExceptionThrown(
-      t.join(util.tEnv.tableFunctionToTable("func0(a)")),
+      t.join(TableFunctionToTable(util.tEnv, "func0(a)")),
       "only accept expressions that define table functions",
       classOf[TableException])
     // SQL API call
@@ -178,7 +182,7 @@ class UserDefinedTableFunctionTest extends TableTestBase {
     // Java Table API call
     util.addFunction("func2", new TableFunc2)
     expectExceptionThrown(
-      t.join(util.tEnv.tableFunctionToTable("func2(c, c)")),
+      t.join(TableFunctionToTable(util.tEnv, "func2(c, c)")),
       "Given parameters of function 'FUNC2' do not match any signature")
     // SQL API call
     expectExceptionThrown(

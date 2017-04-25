@@ -178,5 +178,4 @@ class BatchTableEnvironment(
 
     registerTableFunctionInternal[T](name, tf)
   }
-
 }

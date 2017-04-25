@@ -92,14 +92,14 @@ abstract class TableFunction[T] extends UserDefinedFunction {
     val resultType = if (getResultType == null) typeInfo else getResultType
 
     new Table(
-      null, // temporarily null
+      tableEnv = null,
       LogicalTableFunctionCall(
         this.getClass.getCanonicalName,
         this,
         params.toList,
         resultType,
         Array.empty,
-        child = null // temporarily null
+        child = null
       )
     )
   }

@@ -180,5 +180,4 @@ class StreamTableEnvironment(
 
     registerTableFunctionInternal[T](name, tf)
   }
-
 }
