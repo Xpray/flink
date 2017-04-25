@@ -151,5 +151,4 @@ class BatchTableEnvironment(
   def registerFunction[T: TypeInformation](name: String, tf: TableFunction[T]): Unit = {
     registerTableFunctionInternal(name, tf)
   }
-
 }
