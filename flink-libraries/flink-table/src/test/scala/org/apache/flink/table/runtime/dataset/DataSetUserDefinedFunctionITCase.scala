@@ -104,7 +104,6 @@ class DataSetUserDefinedFunctionITCase(
     val tableEnv = TableEnvironment.getTableEnvironment(env, config)
     val in = testData(env).toTable(tableEnv).as('a, 'b, 'c)
     val func2 = new TableFunc2
-
     val result = in
       .join(func2('c) as ('name, 'len))
       .select('c, 'name, 'len)
@@ -196,7 +195,6 @@ class DataSetUserDefinedFunctionITCase(
     val env = ExecutionEnvironment.getExecutionEnvironment
     val tEnv = TableEnvironment.getTableEnvironment(env)
     val richTableFunc1 = new RichTableFunc1
-    tEnv.registerFunction("RichTableFunc1", richTableFunc1)
     UserDefinedFunctionTestUtils.setJobParameters(env, Map("word_separator" -> "#"))
 
     val result = testData(env)
@@ -214,7 +212,6 @@ class DataSetUserDefinedFunctionITCase(
     val env = ExecutionEnvironment.getExecutionEnvironment
     val tEnv = TableEnvironment.getTableEnvironment(env)
     val richTableFunc1 = new RichTableFunc1
-    tEnv.registerFunction("RichTableFunc1", richTableFunc1)
     val richFunc2 = new RichFunc2
     tEnv.registerFunction("RichFunc2", richFunc2)
     UserDefinedFunctionTestUtils.setJobParameters(
@@ -283,7 +280,6 @@ class DataSetUserDefinedFunctionITCase(
     val env = ExecutionEnvironment.getExecutionEnvironment
     val tableEnv = TableEnvironment.getTableEnvironment(env, config)
     val varArgsFunc0 = new VarArgsFunc0
-    tableEnv.registerFunction("VarArgsFunc0", varArgsFunc0)
 
     val result = testData(env)
       .toTable(tableEnv, 'a, 'b, 'c)

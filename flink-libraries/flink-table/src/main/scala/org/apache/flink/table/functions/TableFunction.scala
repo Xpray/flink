@@ -19,7 +19,9 @@
 package org.apache.flink.table.functions
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.table.expressions.{Expression, TableFunctionCall}
+import org.apache.flink.table.api.{Table, TableEnvironment}
+import org.apache.flink.table.expressions.{Expression, TableFunctionCall, UnresolvedFieldReference}
+import org.apache.flink.table.plan.logical.LogicalTableFunctionCall
 import org.apache.flink.util.Collector
 
 /**
@@ -85,13 +87,21 @@ abstract class TableFunction[T] extends UserDefinedFunction {
     * @param params actual parameters of function
     * @return [[Expression]] in form of a [[TableFunctionCall]]
     */
-  final def apply(params: Expression*)(implicit typeInfo: TypeInformation[T]): Expression = {
-    val resultType = if (getResultType == null) {
-      typeInfo
-    } else {
-      getResultType
-    }
-    TableFunctionCall(getClass.getSimpleName, this, params, resultType)
+  final def apply(params: Expression*)(implicit typeInfo: TypeInformation[T]): Table = {
+
+    val resultType = if (getResultType == null) typeInfo else getResultType
+
+    new Table(
+      tableEnv = null,
+      LogicalTableFunctionCall(
+        this.getClass.getCanonicalName,
+        this,
+        params.toList,
+        resultType,
+        Array.empty,
+        child = null
+      )
+    )
   }
 
   override def toString: String = getClass.getCanonicalName
