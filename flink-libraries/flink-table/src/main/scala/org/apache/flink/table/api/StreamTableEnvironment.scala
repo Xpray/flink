@@ -31,7 +31,7 @@ import org.apache.flink.api.java.typeutils.GenericTypeInfo
 import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.table.explain.PlanJsonParser
-import org.apache.flink.table.expressions._
+import org.apache.flink.table.expressions.Expression
 import org.apache.flink.table.plan.nodes.FlinkConventions
 import org.apache.flink.table.plan.nodes.datastream.DataStreamRel
 import org.apache.flink.table.plan.rules.FlinkRuleSets
@@ -376,4 +376,5 @@ abstract class StreamTableEnvironment(
         System.lineSeparator +
         s"$sqlPlan"
   }
+
 }
