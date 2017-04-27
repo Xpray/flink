@@ -107,6 +107,10 @@ abstract class TableEnvironment(val config: TableConfig) {
   // registered external catalog names -> catalog
   private val externalCatalogs = new HashMap[String, ExternalCatalog]
 
+  private lazy val tableFunctionEnvironment = new TableFunctionEnvironment(this)
+
+  final def tableApply(udtf: String): Table = tableFunctionEnvironment(udtf)
+
   /** Returns the table config to define the runtime behavior of the Table API. */
   def getConfig = config
 
