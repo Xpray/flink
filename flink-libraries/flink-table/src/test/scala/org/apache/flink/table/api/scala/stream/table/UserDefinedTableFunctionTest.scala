@@ -140,6 +140,21 @@ class UserDefinedTableFunctionTest extends TableTestBase {
     val t = util.addTable[(Int, Long, String)]("MyTable", 'a, 'b, 'c)
     val tEnv = TableEnvironment.getTableEnvironment(mock(classOf[JavaExecutionEnv]))
 
+    expectExceptionThrown({
+      t.leftOuterJoin(t)
+    }, "")
+
+    expectExceptionThrown({
+      t.join(t as ('x, 'y, 'z))
+    }, "")
+
+    expectExceptionThrown({
+      val tf1 = new TableFunc1
+      util.addFunction("tf1", tf1)
+      t.leftOuterJoin(t.join(tf1('c)))
+    }, "")
+
+
     //=================== check scala object is forbidden =====================
     // Scala table environment register
     expectExceptionThrown(util.addFunction("udtf", ObjectTableFunction), "Scala object")
