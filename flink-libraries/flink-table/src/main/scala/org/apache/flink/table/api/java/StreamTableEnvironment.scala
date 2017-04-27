@@ -22,6 +22,7 @@ import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.table.api._
+import org.apache.flink.table.api.scala.TableFunctionConversions
 import org.apache.flink.table.expressions.ExpressionParser
 import org.apache.flink.table.functions.TableFunction
 

@@ -20,7 +20,7 @@ package org.apache.flink.table.api.scala
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.table.api.Table
-import org.apache.flink.table.expressions.{Expression, TableFunctionCall}
+import org.apache.flink.table.expressions._
 import org.apache.flink.table.functions.TableFunction
 import org.apache.flink.table.plan.logical.LogicalTableFunctionCall
 
@@ -30,7 +30,7 @@ class TableFunctionConversions[T](tf: TableFunction[T]) {
     * Creates a Table to a [[TableFunction]] in Scala Table API.
     *
     * @param params actual parameters of function
-    * @return [[TableFunctionCall]] in form of a [[Table]]
+    * @return [[LogicalTableFunctionCall]] in form of a [[Table]]
     */
   final def apply(params: Expression*)(implicit typeInfo: TypeInformation[T]): Table = {
 

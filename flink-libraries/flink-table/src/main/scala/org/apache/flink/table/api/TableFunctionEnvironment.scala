@@ -16,22 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.flink.table.api.utils
+package org.apache.flink.table.api
 
-import org.apache.flink.table.api.{Table, TableEnvironment, TableException}
 import org.apache.flink.table.expressions._
 
-
-object TableFunctionToTable {
+class TableFunctionEnvironment(tableEnv: TableEnvironment) {
 
   /**
     * this method is for converting a udtf String to Table
-    * ex: TableFunctionToTable(tEnv, "split(c) as (a, b)")
-    * @param tableEnv
     * @param udtf
     * @return
     */
-  def apply(tableEnv: TableEnvironment, udtf: String): Table = {
+  def apply(udtf: String): Table = {
+
     var alias: Option[Seq[String]] = None
 
     // unwrap an Expression until we get a TableFunctionCall
@@ -56,4 +53,5 @@ object TableFunctionToTable {
       tableFunctionCall
     )
   }
+
 }

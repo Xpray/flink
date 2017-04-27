@@ -337,7 +337,7 @@ class Table(
     *
     *   TableFunction<String> split = new MySplitUDTF();
     *   tableEnv.registerFunction("split", split);
-    *   table.leftOuterJoin(tableApply("split(c) as (s)")).select("a, b, c, s");
+    *   table.leftOuterJoin(tableEnv.tableApply("split(c)").as("s"))).select("a, b, c, s");
     * }}}
     */
   def leftOuterJoin(right: Table): Table = {
