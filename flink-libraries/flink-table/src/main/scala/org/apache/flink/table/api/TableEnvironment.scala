@@ -49,11 +49,11 @@ import org.apache.flink.table.api.scala.{BatchTableEnvironment => ScalaBatchTabl
 import org.apache.flink.table.calcite.{FlinkPlannerImpl, FlinkRelBuilder, FlinkTypeFactory, FlinkTypeSystem}
 import org.apache.flink.table.catalog.{ExternalCatalog, ExternalCatalogSchema}
 import org.apache.flink.table.codegen.{CodeGenerator, ExpressionReducer}
-import org.apache.flink.table.expressions.{Alias, Expression, UnresolvedFieldReference}
+import org.apache.flink.table.expressions.{Alias, Call, Expression, ExpressionParser, TableFunctionCall, UnresolvedFieldReference}
 import org.apache.flink.table.functions.utils.UserDefinedFunctionUtils.{checkForInstantiation, checkNotSingleton, createScalarSqlFunction, createTableSqlFunctions}
 import org.apache.flink.table.functions.{ScalarFunction, TableFunction}
 import org.apache.flink.table.plan.cost.DataSetCostFactory
-import org.apache.flink.table.plan.logical.{CatalogNode, LogicalRelNode}
+import org.apache.flink.table.plan.logical.{CatalogNode, LogicalRelNode, LogicalTableFunctionCall}
 import org.apache.flink.table.plan.rules.FlinkRuleSets
 import org.apache.flink.table.plan.schema.RelTable
 import org.apache.flink.table.runtime.MapRunner
@@ -106,6 +106,34 @@ abstract class TableEnvironment(val config: TableConfig) {
 
   // registered external catalog names -> catalog
   private val externalCatalogs = new HashMap[String, ExternalCatalog]
+
+  // the method for converting a udtf String to Table for Java API
+  final def tableApply(udtf: String): Table = {
+    var alias: Option[Seq[String]] = None
+
+    // unwrap an Expression until we get a TableFunctionCall
+    def unwrap(expr: Expression): TableFunctionCall = expr match {
+      case Alias(child, name, extraNames) =>
+        alias = Some(Seq(name) ++ extraNames)
+        unwrap(child)
+      case Call(name, args) =>
+        val function = functionCatalog.lookupFunction(name, args)
+        unwrap(function)
+      case c: TableFunctionCall => c
+      case _ =>
+        throw new TableException(
+          "Cross/Outer Apply operators only accept expressions that define table functions.")
+    }
+
+    val tableFunctionCall: LogicalTableFunctionCall =
+      unwrap(ExpressionParser.parseExpression(udtf))
+        .as(alias).toLogicalTableFunctionCall(child = null)
+
+    new Table(
+      this,
+      tableFunctionCall
+    )
+  }
 
   /** Returns the table config to define the runtime behavior of the Table API. */
   def getConfig = config

@@ -84,7 +84,6 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
   @Test
   def testUserDefinedTableFunctionWithParameter(): Unit = {
     val tableFunc1 = new RichTableFunc1
-    tEnv.registerFunction("RichTableFunc1", tableFunc1)
     UserDefinedFunctionTestUtils.setJobParameters(env, Map("word_separator" -> " "))
     StreamITCase.testResults = mutable.MutableList()
 
@@ -105,7 +104,6 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
   def testUserDefinedTableFunctionWithUserDefinedScalarFunction(): Unit = {
     val tableFunc1 = new RichTableFunc1
     val richFunc2 = new RichFunc2
-    tEnv.registerFunction("RichTableFunc1", tableFunc1)
     tEnv.registerFunction("RichFunc2", richFunc2)
     UserDefinedFunctionTestUtils.setJobParameters(
       env,
@@ -186,7 +184,6 @@ class DataStreamUserDefinedFunctionITCase extends StreamingMultipleProgramsTestB
   @Test
   def testTableFunctionWithVariableArguments(): Unit = {
     val varArgsFunc0 = new VarArgsFunc0
-    tEnv.registerFunction("VarArgsFunc0", varArgsFunc0)
 
     val result = testData(env)
       .toTable(tEnv, 'a, 'b, 'c)
