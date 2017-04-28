@@ -38,6 +38,7 @@ import org.apache.flink.table.functions.utils.UserDefinedFunctionUtils._
 import org.apache.flink.table.plan.schema.FlinkTableFunctionImpl
 import org.apache.flink.table.validate.{ValidationFailure, ValidationSuccess}
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -56,6 +57,8 @@ case class Project(projectList: Seq[NamedExpression], child: LogicalNode) extend
             case gcf: GetCompositeField => Alias(gcf, gcf.aliasName().getOrElse(s"_c$i"))
             case other => Alias(other, s"_c$i")
           }
+          // This happens when TableFunction.apply returns a Table, ex: t1.join(split('a) as 'b)
+          case alias: Alias => alias
           case _ =>
             throw new RuntimeException("This should never be called and probably points to a bug.")
         }
@@ -440,8 +443,7 @@ case class Join(
     left.output.map(_.name).toSet.intersect(right.output.map(_.name).toSet)
 
   override def validate(tableEnv: TableEnvironment): LogicalNode = {
-    if (tableEnv.isInstanceOf[StreamTableEnvironment]
-      && !right.isInstanceOf[LogicalTableFunctionCall]) {
+    if (tableEnv.isInstanceOf[StreamTableEnvironment] && !verifyTableFunctionExistence(right)) {
       failValidation(s"Join on stream tables is currently not supported.")
     }
 
@@ -455,6 +457,15 @@ case class Join(
 
     resolvedJoin.condition.foreach(testJoinCondition)
     resolvedJoin
+  }
+
+  @tailrec
+  private def verifyTableFunctionExistence(root: LogicalNode): Boolean = {
+    root match {
+      case project: Project => verifyTableFunctionExistence(project.child)
+      case _: LogicalTableFunctionCall => true
+      case _ => false
+    }
   }
 
   private def testJoinCondition(expression: Expression): Unit = {
@@ -662,11 +673,19 @@ case class LogicalTableFunctionCall(
     child: LogicalNode)
   extends UnaryNode {
 
-  private val (_, fieldIndexes, fieldTypes) = getFieldInfo(resultType)
+  private val (generatedNames, fieldIndexes, fieldTypes) = getFieldInfo(resultType)
   private var evalMethod: Method = _
 
-  override def output: Seq[Attribute] = fieldNames.zip(fieldTypes).map {
-    case (n, t) => ResolvedFieldReference(n, t)
+  override def output: Seq[Attribute] = {
+    if (fieldNames.isEmpty) {
+      generatedNames.zip(fieldTypes).map {
+        case (n, t) => ResolvedFieldReference(n, t)
+      }
+    } else {
+      fieldNames.zip(fieldTypes).map {
+        case (n, t) => ResolvedFieldReference(n, t)
+      }
+    }
   }
 
   override def validate(tableEnv: TableEnvironment): LogicalNode = {
@@ -691,7 +710,11 @@ case class LogicalTableFunctionCall(
 
   override protected[logical] def construct(relBuilder: RelBuilder): RelBuilder = {
     val fieldIndexes = getFieldInfo(resultType)._2
-    val function = new FlinkTableFunctionImpl(resultType, fieldIndexes, fieldNames, evalMethod)
+    val function = new FlinkTableFunctionImpl(
+      resultType,
+      fieldIndexes,
+      if (fieldNames.isEmpty) generatedNames else fieldNames, evalMethod
+    )
     val typeFactory = relBuilder.getTypeFactory.asInstanceOf[FlinkTypeFactory]
     val sqlFunction = TableSqlFunction(
       tableFunction.functionIdentifier,

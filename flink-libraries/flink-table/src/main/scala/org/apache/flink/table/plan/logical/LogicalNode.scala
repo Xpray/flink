@@ -79,15 +79,21 @@ abstract class LogicalNode extends TreeNode[LogicalNode] {
   protected[logical] def construct(relBuilder: RelBuilder): RelBuilder
 
   def validate(tableEnv: TableEnvironment): LogicalNode = {
-    val resolvedNode = resolveExpressions(tableEnv)
-    resolvedNode.expressionPostOrderTransform {
-      case a: Attribute if !a.valid =>
-        val from = children.flatMap(_.output).map(_.name).mkString(", ")
-        failValidation(s"Cannot resolve [${a.name}] given input [$from].")
+    // A tableFunction may not contain the tableEnv when created by scala user
+    // We do not validate operators (select, as etc.)
+    // if they are applied on such TableFunction with empty tableEnv.
+    if (tableEnv == null) this
+    else {
+      val resolvedNode = resolveExpressions(tableEnv)
+      resolvedNode.expressionPostOrderTransform {
+        case a: Attribute if !a.valid =>
+          val from = children.flatMap(_.output).map(_.name).mkString(", ")
+          failValidation(s"Cannot resolve [${a.name}] given input [$from].")
 
-      case e: Expression if e.validateInput().isFailure =>
-        failValidation(s"Expression $e failed on input check: " +
-          s"${e.validateInput().asInstanceOf[ValidationFailure].message}")
+        case e: Expression if e.validateInput().isFailure =>
+          failValidation(s"Expression $e failed on input check: " +
+            s"${e.validateInput().asInstanceOf[ValidationFailure].message}")
+      }
     }
   }
 
