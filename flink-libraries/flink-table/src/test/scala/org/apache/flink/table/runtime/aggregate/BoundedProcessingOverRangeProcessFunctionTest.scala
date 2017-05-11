@@ -32,6 +32,7 @@ import org.apache.flink.streaming.util.{KeyedOneInputStreamOperatorTestHarness, 
 import org.apache.flink.table.codegen.GeneratedAggregationsFunction
 import org.apache.flink.table.functions.AggregateFunction
 import org.apache.flink.table.functions.aggfunctions.{LongMaxWithRetractAggFunction, LongMinWithRetractAggFunction}
+import org.apache.flink.table.functions.utils.UserDefinedFunctionUtils
 import org.apache.flink.table.runtime.aggregate.BoundedProcessingOverRangeProcessFunctionTest._
 import org.apache.flink.types.Row
 import org.junit.Test
@@ -74,7 +75,7 @@ class BoundedProcessingOverRangeProcessFunctionTest {
         |    "nRhYmxlLmZ1bmN0aW9ucy5hZ2dmdW5jdGlvbnMuTWluV2l0aFJldHJhY3RBZ2dGdW5jdGlvbq_ZGuzxtA_S" +
         |    "AgABTAADb3JkdAAVTHNjYWxhL21hdGgvT3JkZXJpbmc7eHIAMm9yZy5hcGFjaGUuZmxpbmsudGFibGUuZnV" +
         |    "uY3Rpb25zLkFnZ3JlZ2F0ZUZ1bmN0aW9uTcYVPtJjNfwCAAB4cgA0b3JnLmFwYWNoZS5mbGluay50YWJsZS" +
-        |    "5mdW5jdGlvbnMuVXNlckRlZmluZWRGdW5jdGlvbi0B91QxuAyTAgAAeHBzcgAZc2NhbGEubWF0aC5PcmRlc" +
+        |    "5mdW5jdGlvbnMuVXNlckRlZmluZWRGdW5jdGlvbhdWZDAqQtY7AgAAeHBzcgAZc2NhbGEubWF0aC5PcmRlc" +
         |    "mluZyRMb25nJOda0iCPo2ukAgAAeHA");
         |
         |    fmax = (org.apache.flink.table.functions.aggfunctions.LongMaxWithRetractAggFunction)
@@ -84,7 +85,7 @@ class BoundedProcessingOverRangeProcessFunctionTest {
         |    "nRhYmxlLmZ1bmN0aW9ucy5hZ2dmdW5jdGlvbnMuTWF4V2l0aFJldHJhY3RBZ2dGdW5jdGlvbvnwowlX0_Qf" +
         |    "AgABTAADb3JkdAAVTHNjYWxhL21hdGgvT3JkZXJpbmc7eHIAMm9yZy5hcGFjaGUuZmxpbmsudGFibGUuZnV" +
         |    "uY3Rpb25zLkFnZ3JlZ2F0ZUZ1bmN0aW9uTcYVPtJjNfwCAAB4cgA0b3JnLmFwYWNoZS5mbGluay50YWJsZS" +
-        |    "5mdW5jdGlvbnMuVXNlckRlZmluZWRGdW5jdGlvbi0B91QxuAyTAgAAeHBzcgAZc2NhbGEubWF0aC5PcmRlc" +
+        |    "5mdW5jdGlvbnMuVXNlckRlZmluZWRGdW5jdGlvbhdWZDAqQtY7AgAAeHBzcgAZc2NhbGEubWF0aC5PcmRlc" +
         |    "mluZyRMb25nJOda0iCPo2ukAgAAeHA");
         |  }
         |
