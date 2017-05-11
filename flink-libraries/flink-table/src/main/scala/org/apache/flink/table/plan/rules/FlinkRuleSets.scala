@@ -178,6 +178,9 @@ object FlinkRuleSets {
     * RuleSet to optimize plans for stream / DataStream execution
     */
   val DATASTREAM_OPT_RULES: RuleSet = RuleSets.ofList(
+    // push a filter into a join
+    FilterJoinRule.FILTER_ON_JOIN,
+
     // translate to DataStream nodes
     DataStreamGroupAggregateRule.INSTANCE,
     DataStreamOverAggregateRule.INSTANCE,
@@ -185,6 +188,7 @@ object FlinkRuleSets {
     DataStreamCalcRule.INSTANCE,
     DataStreamScanRule.INSTANCE,
     DataStreamUnionRule.INSTANCE,
+    DataStreamJoinRule.INSTANCE,
     DataStreamValuesRule.INSTANCE,
     DataStreamCorrelateRule.INSTANCE,
     StreamTableSourceScanRule.INSTANCE

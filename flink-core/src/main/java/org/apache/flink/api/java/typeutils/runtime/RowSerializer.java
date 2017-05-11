@@ -231,6 +231,44 @@ public final class RowSerializer extends TypeSerializer<Row> {
 		return false;
 	}
 
+	public void serializeField(Row record, DataOutputView target) throws IOException {
+		int len = fieldSerializers.length;
+
+		if (record.getArity() != len) {
+			throw new RuntimeException("Row arity of from does not match serializers.");
+		}
+
+		// write a null mask
+		writeNullMask(len, record, target);
+
+		// serialize non-null fields
+		for (int i = 0; i < len; i++) {
+			Object o = record.getField(i);
+			if (o != null) {
+				fieldSerializers[i].serialize(o, target);
+			}
+		}
+	}
+
+	public Row deserializeField(DataInputView source) throws IOException {
+		int len = fieldSerializers.length;
+
+		Row result = new Row(len);
+
+		// read null mask
+		readIntoNullMask(len, source, nullMask);
+
+		for (int i = 0; i < len; i++) {
+			if (nullMask[i]) {
+				result.setField(i, null);
+			} else {
+				result.setField(i, fieldSerializers[i].deserialize(source));
+			}
+		}
+
+		return result;
+	}
+
 	@Override
 	public boolean canEqual(Object obj) {
 		return obj instanceof RowSerializer;
