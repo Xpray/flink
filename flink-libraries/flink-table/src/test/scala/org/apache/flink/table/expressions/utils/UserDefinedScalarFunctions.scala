@@ -105,7 +105,7 @@ object Func10 extends ScalarFunction {
     c
   }
 
-  override def getResultType(signature: Array[Class[_]]): TypeInformation[_] = {
+  def getResultType(signature: Array[Class[_]]): TypeInformation[_] = {
     Types.SQL_TIMESTAMP
   }
 }
@@ -121,7 +121,7 @@ object Func12 extends ScalarFunction {
     a
   }
 
-  override def getResultType(signature: Array[Class[_]]): TypeInformation[_] = {
+  def getResultType(signature: Array[Class[_]]): TypeInformation[_] = {
     Types.INTERVAL_MILLIS
   }
 }
