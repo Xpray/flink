@@ -52,7 +52,7 @@ class CalcITCase(
     val env = ExecutionEnvironment.getExecutionEnvironment
     val tEnv = BatchTableEnvironment.create(env, config)
 
-    val t = CollectionDataSets.get3TupleDataSet(env).toTable(tEnv).select('_1, '_2, '_3)
+    val t = CollectionDataSets.get3TupleDataSet(env).toTable(tEnv).select('_1, '_2)
 
     val expected = "1,1,Hi\n" + "2,2,Hello\n" + "3,2,Hello world\n" +
       "4,3,Hello world, how are you?\n" + "5,3,I am fine.\n" + "6,3,Luke Skywalker\n" +
@@ -167,6 +167,7 @@ class CalcITCase(
     val filterDs = ds.filter( 'c.like("%world%") )
 
     val expected = "3,2,Hello world\n" + "4,3,Hello world, how are you?\n"
+    filterDs.toDataSet[Row].print()
     val results = filterDs.toDataSet[Row].collect()
     TestBaseUtils.compareResultAsText(results.asJava, expected)
   }

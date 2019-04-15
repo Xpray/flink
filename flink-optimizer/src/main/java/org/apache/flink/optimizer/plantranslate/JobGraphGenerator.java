@@ -27,6 +27,7 @@ import org.apache.flink.api.common.cache.DistributedCache;
 import org.apache.flink.api.common.distributions.DataDistribution;
 import org.apache.flink.api.common.operators.util.UserCodeWrapper;
 import org.apache.flink.api.common.typeutils.TypeSerializerFactory;
+import org.apache.flink.api.java.operators.CachedDataSink;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.AlgorithmOptions;
 import org.apache.flink.configuration.ConfigConstants;
@@ -61,6 +62,7 @@ import org.apache.flink.runtime.iterative.task.IterationSynchronizationSinkTask;
 import org.apache.flink.runtime.iterative.task.IterationTailTask;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.InputFormatVertex;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
@@ -149,6 +151,8 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 	private List<IterationPlanNode> iterationStack;  // stack of enclosing iterations
 	
 	private SlotSharingGroup sharingGroup;
+
+	private Map<String, IntermediateDataSetID> digest2IntermediateDataSetID = new HashMap<>();
 	
 	// ------------------------------------------------------------------------
 
@@ -959,6 +963,9 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		final TaskConfig config = new TaskConfig(vertex.getConfiguration());
 
 		vertex.setResources(node.getMinResources(), node.getPreferredResources());
+		if (node.getSinkNode().getOperator().isCachedSink()) {
+			vertex.setCached(true);
+		}
 		vertex.setInvokableClass(DataSinkTask.class);
 		vertex.setFormatDescription(getDescriptionForUserCode(node.getProgramOperator().getUserCodeWrapper()));
 		
@@ -1163,33 +1170,36 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		}
 
 		final ResultPartitionType resultType;
+		if (targetVertex instanceof OutputFormatVertex && ((OutputFormatVertex) targetVertex).isCached()) {
+			resultType = ResultPartitionType.BLOCKING_PERSISTENT;
+		} else {
+			switch (channel.getDataExchangeMode()) {
 
-		switch (channel.getDataExchangeMode()) {
+				case PIPELINED:
+					resultType = ResultPartitionType.PIPELINED;
+					break;
 
-			case PIPELINED:
-				resultType = ResultPartitionType.PIPELINED;
-				break;
-
-			case BATCH:
-				// BLOCKING results are currently not supported in closed loop iterations
-				//
-				// See https://issues.apache.org/jira/browse/FLINK-1713 for details
-				resultType = channel.getSource().isOnDynamicPath()
+				case BATCH:
+					// BLOCKING results are currently not supported in closed loop iterations
+					//
+					// See https://issues.apache.org/jira/browse/FLINK-1713 for details
+					resultType = channel.getSource().isOnDynamicPath()
 						? ResultPartitionType.PIPELINED
 						: ResultPartitionType.BLOCKING;
-				break;
+					break;
 
-			case PIPELINE_WITH_BATCH_FALLBACK:
-				throw new UnsupportedOperationException("Data exchange mode " +
+				case PIPELINE_WITH_BATCH_FALLBACK:
+					throw new UnsupportedOperationException("Data exchange mode " +
 						channel.getDataExchangeMode() + " currently not supported.");
 
-			default:
-				throw new UnsupportedOperationException("Unknown data exchange mode.");
+				default:
+					throw new UnsupportedOperationException("Unknown data exchange mode.");
 
+			}
 		}
 
 		JobEdge edge = targetVertex.connectNewDataSetAsInput(sourceVertex, distributionPattern, resultType);
-
+		digest2IntermediateDataSetID.put(channel.getSource().getNodeName(), edge.getSourceId());
 		// -------------- configure the source task's ship strategy strategies in task config --------------
 		final int outputIndex = sourceConfig.getNumOutputs();
 		sourceConfig.addOutputShipStrategy(channel.getShipStrategy());
@@ -1639,7 +1649,7 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 				vertex.setOperatorName(opName + " -> " + vertex.getOperatorName());
 			}
 
-			// operator description 
+			// operator description
 			String opDescription = JsonMapper.getOperatorStrategyString(planNode.getDriverStrategy());
 			if (vertex.getOperatorDescription() == null) {
 				vertex.setOperatorDescription(opDescription);

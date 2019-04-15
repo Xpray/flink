@@ -33,7 +33,7 @@ import scala.collection.JavaConversions._
   */
 class TableProgramsCollectionTestBase(
     tableConfigMode: TableConfigMode)
-    extends TableProgramsTestBase(TestExecutionMode.COLLECTION, tableConfigMode) {
+    extends TableProgramsTestBase(TestExecutionMode.CLUSTER, tableConfigMode) {
 }
 
 object TableProgramsCollectionTestBase {

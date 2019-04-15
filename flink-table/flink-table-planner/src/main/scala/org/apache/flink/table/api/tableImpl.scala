@@ -441,6 +441,18 @@ class TableImpl(
   }
 
   /**
+    * The Flink Planner do not support cache for the moment.
+    */
+  override def cache(): Table =
+    throw new TableException("Flink Planner do not support cache() now.")
+
+  /**
+    * The Flink Planner do not support invalidateCache for the moment.
+    */
+  override def invalidateCache(): Unit =
+    throw new TableException("Flink Planner do not support invalidateCache() now.")
+
+  /**
     * Registers an unique table name under the table environment
     * and return the registered table name.
     */

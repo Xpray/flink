@@ -309,7 +309,7 @@ abstract class BatchTableEnvironment(
         // translate the Table into a DataSet and provide the type that the TableSink expects.
         val result: DataSet[T] = translate(table, batchQueryConfig)(outputType)
         // Give the DataSet to the TableSink to emit it.
-        batchSink.emitDataSet(result)
+          batchSink.emitDataSet(result)
       case _ =>
         throw new TableException("BatchTableSink required to emit batch Table.")
     }

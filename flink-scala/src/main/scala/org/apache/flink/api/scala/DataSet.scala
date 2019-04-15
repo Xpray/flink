@@ -1392,7 +1392,7 @@ class DataSet[T: ClassTag](set: JavaDataSet[T]) {
     val iterativeSet =
       new IterativeDataSet[T](
         javaSet.getExecutionEnvironment,
-        javaSet.getType,
+          javaSet.getType,
         javaSet,
         maxIterations)
 

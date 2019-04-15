@@ -879,4 +879,52 @@ public interface Table {
 	 * @return An OverWindowedTable to specify the aggregations.
 	 */
 	OverWindowedTable window(OverWindow... overWindows);
+
+	/**
+	 * Cache this table to builtin table service or the specified customized table service.
+	 *
+	 * This method provides a hint to Flink that the current table maybe reused later so a
+	 * cache should be created to avoid regenerating this table.
+	 *
+	 * The following code snippet gives an example of how this method could be used.
+	 *
+	 * {{{
+	 *   val t = tEnv.fromCollection(data).as('country, 'color, 'count)
+	 *
+	 *   val t1 = t.filter('count < 100).cache()
+	 *   // t1 is cached after it is computed for the first time.
+	 *   val x = t1.collect().size
+	 *
+	 *   // When t1 is used again to compute t2, it may not be re-computed.
+	 *   val t2 = t1.groupBy('country).select('country, 'count.sum as 'sum)
+	 *   val res2 = t2.collect()
+	 *   res2.foreach(println)
+	 *
+	 *   // Similarly when t1 is used again to compute t3, it may not be re-computed.
+	 *   val t3 = t1.groupBy('color).select('color, 'count.avg as 'avg)
+	 *   val res3 = t3.collect()
+	 *   res3.foreach(println)
+	 *
+	 * }}}
+	 *
+	 * @note Flink optimizer may decide to not use the cache if doing that will accelerate the
+	 * processing, or if the cache is no longer available for reasons such as the cache has
+	 * been invalidated.
+	 * @note The table cache could be create lazily. That means the cache may be created at
+	 * the first time when the cached table is computed.
+	 * @note The table cache will be cleared when the user program exits.
+	 *
+	 * @return the current table with a cache hint. The original table reference is not modified
+	 *               by the execution of this method.
+	 */
+	Table cache();
+
+	/**
+	 * Manually invalidate the cache of this table to release the physical resources. Users are
+	 * not required to invoke this method to release physical resource unless they want to. The
+	 * table caches are cleared when user program exits.
+	 *
+	 * @note After invalidated, the cache may be re-created if this table is used again.
+	 */
+	void invalidateCache();
 }

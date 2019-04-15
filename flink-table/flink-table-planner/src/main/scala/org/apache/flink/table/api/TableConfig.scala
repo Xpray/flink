@@ -20,7 +20,11 @@ package org.apache.flink.table.api
 import _root_.java.util.TimeZone
 import _root_.java.math.MathContext
 
+import org.apache.flink.configuration.{Configuration, GlobalConfiguration}
+import org.apache.flink.service.ServiceDescriptor
 import org.apache.flink.table.calcite.CalciteConfig
+import org.apache.flink.table.interactive.FlinkTableServiceFactoryDescriptor
+import org.apache.flink.table.interactive.util.TableServiceUtil
 
 /**
  * A config to define the runtime behavior of the Table API.
@@ -41,6 +45,11 @@ class TableConfig {
     * Defines the configuration of Calcite for Table API and SQL queries.
     */
   private var calciteConfig: CalciteConfig = CalciteConfig.DEFAULT
+
+  /**
+    * Defines user-defined configuration
+    */
+  private var conf = GlobalConfiguration.loadConfiguration()
 
   /**
     * Defines the default context for decimal division calculation.
@@ -109,6 +118,11 @@ class TableConfig {
   }
 
   /**
+    * Returns user-defined configuration
+    */
+  def getConf: Configuration = conf
+
+  /**
     * Returns the default context for decimal division calculation.
     * [[_root_.java.math.MathContext#DECIMAL128]] by default.
     */
@@ -139,6 +153,39 @@ class TableConfig {
       throw new IllegalArgumentException("Length must be greater than 0.")
     }
     this.maxGeneratedCodeLength = maxGeneratedCodeLength
+  }
+
+  /**
+    * Defines the ServiceDescriptor for TableService.
+    */
+  private var tableServiceDescriptor: ServiceDescriptor = _
+
+  def getTableServiceDescriptor(): ServiceDescriptor = {
+    if (tableServiceDescriptor == null) {
+      TableServiceUtil.createTableServiceDescriptor(this.conf)
+    } else {
+      tableServiceDescriptor
+    }
+  }
+
+  def setTableServiceDescriptor(descriptor: ServiceDescriptor): Unit = {
+    tableServiceDescriptor = descriptor
+  }
+
+  /**
+    * Defines the FlinkTableServiceFactoryDescriptor for TableService.
+    */
+  private var tableServiceFactoryDescriptor: FlinkTableServiceFactoryDescriptor = {
+    val desc = TableServiceUtil.getDefaultTableServiceFactoryDescriptor
+    desc.getConfiguration.addAll(getConf)
+    desc
+  }
+
+  def getTableServiceFactoryDescriptor(): FlinkTableServiceFactoryDescriptor =
+    tableServiceFactoryDescriptor
+
+  def setTableServiceFactoryDescriptor(descriptor: FlinkTableServiceFactoryDescriptor): Unit = {
+    tableServiceFactoryDescriptor = descriptor
   }
 }
 

@@ -52,6 +52,7 @@ import org.apache.flink.api.java.io.PrintingOutputFormat;
 import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.io.TextOutputFormat.TextFormatter;
 import org.apache.flink.api.java.operators.AggregateOperator;
+import org.apache.flink.api.java.operators.CachedDataSink;
 import org.apache.flink.api.java.operators.CoGroupOperator;
 import org.apache.flink.api.java.operators.CoGroupOperator.CoGroupOperatorSets;
 import org.apache.flink.api.java.operators.CrossOperator;
@@ -1786,6 +1787,12 @@ public abstract class DataSet<T> {
 		}
 
 		DataSink<T> sink = new DataSink<>(this, outputFormat, getType());
+		this.context.registerDataSink(sink);
+		return sink;
+	}
+
+	public DataSink<T> cache() {
+		DataSink<T> sink = new CachedDataSink<>(this, getType());
 		this.context.registerDataSink(sink);
 		return sink;
 	}

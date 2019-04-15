@@ -53,6 +53,8 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 
 	private Ordering localOrdering;
 
+	private boolean cachedSink;
+
 	// --------------------------------------------------------------------------------------------
 
 	/**
@@ -269,7 +271,15 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 			((FinalizeOnMaster)format).finalizeGlobal(1);
 		}
 	}
-	
+
+	public boolean isCachedSink() {
+		return cachedSink;
+	}
+
+	public void setCachedSink(boolean cachedSink) {
+		this.cachedSink = cachedSink;
+	}
+
 	// --------------------------------------------------------------------------------------------
 	
 	@Override

@@ -163,4 +163,8 @@ class TableImpl(val tableEnv: TableEnvironment, relNode: RelNode) extends Table 
   override def window(groupWindow: GroupWindow): GroupWindowedTable = ???
 
   override def window(overWindows: OverWindow*): OverWindowedTable = ???
+
+  override def cache(): Table = ???
+
+  override def invalidateCache(): Unit = ???
 }

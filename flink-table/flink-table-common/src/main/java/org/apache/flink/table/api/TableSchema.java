@@ -25,6 +25,7 @@ import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,7 +39,7 @@ import java.util.Set;
   * A table schema that represents a table's structure with field names and types.
   */
 @PublicEvolving
-public class TableSchema {
+public class TableSchema implements Serializable {
 
 	private static final String ATOMIC_TYPE_FIELD_NAME = "f0";
 

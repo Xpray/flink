@@ -33,6 +33,8 @@ public class OutputFormatVertex extends JobVertex {
 	private static final long serialVersionUID = 1L;
 	
 	private String formatDescription;
+
+	private boolean cached;
 	
 	/**
 	 * Creates a new task vertex with the specified name.
@@ -135,5 +137,13 @@ public class OutputFormatVertex extends JobVertex {
 			// restore previous classloader
 			Thread.currentThread().setContextClassLoader(prevContextCl);
 		}
+	}
+
+	public boolean isCached() {
+		return cached;
+	}
+
+	public void setCached(boolean cached) {
+		this.cached = cached;
 	}
 }
