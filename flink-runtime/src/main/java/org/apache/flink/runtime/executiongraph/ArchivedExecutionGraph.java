@@ -20,11 +20,16 @@ package org.apache.flink.runtime.executiongraph;
 
 import org.apache.flink.api.common.ArchivedExecutionConfig;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.runtime.accumulators.StringifiedAccumulatorResult;
 import org.apache.flink.runtime.checkpoint.CheckpointStatsSnapshot;
+import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
+import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.util.OptionalFailure;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
@@ -88,6 +93,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 	private final ArchivedExecutionConfig archivedExecutionConfig;
 	private final boolean isStoppable;
 	private final Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators;
+	private final Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker;
 
 	@Nullable
 	private final CheckpointCoordinatorConfiguration jobCheckpointingConfiguration;
@@ -106,6 +112,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 			String jsonPlan,
 			StringifiedAccumulatorResult[] archivedUserAccumulators,
 			Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators,
+			Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker,
 			ArchivedExecutionConfig executionConfig,
 			boolean isStoppable,
 			@Nullable CheckpointCoordinatorConfiguration jobCheckpointingConfiguration,
@@ -121,6 +128,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		this.jsonPlan = Preconditions.checkNotNull(jsonPlan);
 		this.archivedUserAccumulators = Preconditions.checkNotNull(archivedUserAccumulators);
 		this.serializedUserAccumulators = Preconditions.checkNotNull(serializedUserAccumulators);
+		this.resultLocationTracker = Preconditions.checkNotNull(resultLocationTracker);
 		this.archivedExecutionConfig = Preconditions.checkNotNull(executionConfig);
 		this.isStoppable = isStoppable;
 		this.jobCheckpointingConfiguration = jobCheckpointingConfiguration;
@@ -250,6 +258,11 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		return serializedUserAccumulators;
 	}
 
+	@Override
+	public Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> getResultLocationTracker() {
+		return resultLocationTracker;
+	}
+
 	class AllVerticesIterator implements Iterator<ArchivedExecutionVertex> {
 
 		private final Iterator<ArchivedExecutionJobVertex> jobVertices;
@@ -316,6 +329,9 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		final Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators =
 			executionGraph.getAccumulatorsSerialized();
 
+		final Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker =
+			executionGraph.getResultLocationTracker();
+
 		final long[] timestamps = new long[JobStatus.values().length];
 
 		for (JobStatus jobStatus : JobStatus.values()) {
@@ -334,6 +350,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 			executionGraph.getJsonPlan(),
 			executionGraph.getAccumulatorResultsStringified(),
 			serializedUserAccumulators,
+			resultLocationTracker,
 			executionGraph.getArchivedExecutionConfig(),
 			executionGraph.isStoppable(),
 			executionGraph.getCheckpointCoordinatorConfiguration(),

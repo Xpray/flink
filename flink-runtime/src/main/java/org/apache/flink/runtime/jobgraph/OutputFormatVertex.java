@@ -22,6 +22,7 @@ import org.apache.flink.api.common.io.FinalizeOnMaster;
 import org.apache.flink.api.common.io.InitializeOnMaster;
 import org.apache.flink.api.common.io.OutputFormat;
 import org.apache.flink.api.common.operators.util.UserCodeWrapper;
+import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.operators.util.TaskConfig;
 
 /**
@@ -35,6 +36,8 @@ public class OutputFormatVertex extends JobVertex {
 	private String formatDescription;
 
 	private boolean cached;
+
+	private IntermediateDataSetID intermediateDataSetID;
 	
 	/**
 	 * Creates a new task vertex with the specified name.
@@ -145,5 +148,20 @@ public class OutputFormatVertex extends JobVertex {
 
 	public void setCached(boolean cached) {
 		this.cached = cached;
+	}
+
+	public void setIntermediateDataSetID(IntermediateDataSetID intermediateDataSetID) {
+		this.intermediateDataSetID = intermediateDataSetID;
+	}
+
+	@Override
+	public JobEdge connectNewDataSetAsInput(JobVertex input, DistributionPattern distPattern, ResultPartitionType partitionType) {
+
+		IntermediateDataSet dataSet = input.createAndAddResultDataSet(intermediateDataSetID, partitionType);
+
+		JobEdge edge = new JobEdge(dataSet, this, distPattern);
+		getInputs().add(edge);
+		dataSet.addConsumer(edge);
+		return edge;
 	}
 }

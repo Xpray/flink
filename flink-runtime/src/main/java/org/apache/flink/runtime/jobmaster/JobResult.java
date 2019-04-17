@@ -18,9 +18,11 @@
 
 package org.apache.flink.runtime.jobmaster;
 
+import org.apache.commons.math3.analysis.function.Abs;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.api.common.accumulators.AccumulatorHelper;
 import org.apache.flink.runtime.client.JobCancellationException;
 import org.apache.flink.runtime.client.JobExecutionException;
@@ -28,7 +30,13 @@ import org.apache.flink.runtime.clusterframework.ApplicationStatus;
 import org.apache.flink.runtime.dispatcher.Dispatcher;
 import org.apache.flink.runtime.executiongraph.AccessExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ErrorInfo;
+import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
+import org.apache.flink.runtime.taskmanager.TaskManager;
+import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.OptionalFailure;
 import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.SerializedValue;
@@ -38,6 +46,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -60,6 +69,8 @@ public class JobResult implements Serializable {
 
 	private final Map<String, SerializedValue<OptionalFailure<Object>>> accumulatorResults;
 
+	private final Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker;
+
 	private final long netRuntime;
 
 	/** Stores the cause of the job failure, or {@code null} if the job finished successfully. */
@@ -70,6 +81,7 @@ public class JobResult implements Serializable {
 			final JobID jobId,
 			final ApplicationStatus applicationStatus,
 			final Map<String, SerializedValue<OptionalFailure<Object>>> accumulatorResults,
+			final Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker,
 			final long netRuntime,
 			@Nullable final SerializedThrowable serializedThrowable) {
 
@@ -78,6 +90,7 @@ public class JobResult implements Serializable {
 		this.jobId = requireNonNull(jobId);
 		this.applicationStatus = requireNonNull(applicationStatus);
 		this.accumulatorResults = requireNonNull(accumulatorResults);
+		this.resultLocationTracker = requireNonNull(resultLocationTracker);
 		this.netRuntime = netRuntime;
 		this.serializedThrowable = serializedThrowable;
 	}
@@ -130,7 +143,8 @@ public class JobResult implements Serializable {
 				netRuntime,
 				AccumulatorHelper.deserializeAccumulators(
 					accumulatorResults,
-					classLoader));
+					classLoader),
+				createResultLocations());
 		} else {
 			final Throwable cause;
 
@@ -154,6 +168,24 @@ public class JobResult implements Serializable {
 		}
 	}
 
+	private Map<AbstractID, Map<AbstractID, ResultLocation>> createResultLocations() {
+		Map<AbstractID, Map<AbstractID, ResultLocation>> resultLocations = new HashMap<>();
+
+		if (resultLocations != null) {
+			for (Map.Entry<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> entry : resultLocationTracker.entrySet()) {
+				Map<AbstractID, ResultLocation> map = new HashMap<>();
+				for (Map.Entry<IntermediateResultPartitionID, ResultLocation> locationEntry : entry.getValue().entrySet()) {
+					map.put(
+						locationEntry.getKey(),
+						locationEntry.getValue()
+					);
+				}
+				resultLocations.put(entry.getKey(), map);
+			}
+		}
+		return resultLocations;
+	}
+
 	/**
 	 * Builder for {@link JobResult}.
 	 */
@@ -165,6 +197,8 @@ public class JobResult implements Serializable {
 		private ApplicationStatus applicationStatus = ApplicationStatus.UNKNOWN;
 
 		private Map<String, SerializedValue<OptionalFailure<Object>>> accumulatorResults;
+
+		private Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker;
 
 		private long netRuntime = -1;
 
@@ -195,11 +229,17 @@ public class JobResult implements Serializable {
 			return this;
 		}
 
+		public Builder resultLocationTracker(final Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker) {
+			this.resultLocationTracker = resultLocationTracker;
+			return this;
+		}
+
 		public JobResult build() {
 			return new JobResult(
 				jobId,
 				applicationStatus,
 				accumulatorResults == null ? Collections.emptyMap() : accumulatorResults,
+				resultLocationTracker == null ? Collections.emptyMap() : resultLocationTracker,
 				netRuntime,
 				serializedThrowable);
 		}
@@ -231,6 +271,7 @@ public class JobResult implements Serializable {
 		final long guardedNetRuntime = Math.max(netRuntime, 0L);
 		builder.netRuntime(guardedNetRuntime);
 		builder.accumulatorResults(accessExecutionGraph.getAccumulatorsSerialized());
+		builder.resultLocationTracker(accessExecutionGraph.getResultLocationTracker());
 
 		if (jobStatus != JobStatus.FINISHED) {
 			final ErrorInfo errorInfo = accessExecutionGraph.getFailureInfo();

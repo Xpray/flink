@@ -295,6 +295,7 @@ public class ExecutionGraphCacheTest extends TestLogger {
 				"",
 				new StringifiedAccumulatorResult[0],
 				Collections.emptyMap(),
+				Collections.emptyMap(),
 				new ArchivedExecutionConfig(new ExecutionConfig()),
 				false,
 				null,

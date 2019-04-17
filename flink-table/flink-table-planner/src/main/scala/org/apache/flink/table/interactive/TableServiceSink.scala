@@ -18,6 +18,8 @@
 
 package org.apache.flink.table.interactive
 
+import java.util.UUID
+
 import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.DataSet
@@ -40,8 +42,10 @@ class TableServiceSink(
 
   override def emitDataSet(dataSet: DataSet[Row]): Unit = {
     dataSet
-      .flatMap(new TableServiceFlatMapFunction(tableName, tableProperties))
-      .cache()
+      //.flatMap(new TableServiceFlatMapFunction(tableName, tableProperties))
+      .cache(UUID.fromString(tableName))
+      .setParallelism(1)
+      .name("CachedTableSink")
   }
 
   override def getOutputType: TypeInformation[Row] = resultType

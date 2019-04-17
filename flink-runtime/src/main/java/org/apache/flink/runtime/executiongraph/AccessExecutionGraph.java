@@ -20,11 +20,17 @@ package org.apache.flink.runtime.executiongraph;
 
 import org.apache.flink.api.common.ArchivedExecutionConfig;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.runtime.accumulators.StringifiedAccumulatorResult;
 import org.apache.flink.runtime.checkpoint.CheckpointStatsSnapshot;
+import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
+import org.apache.flink.runtime.taskmanager.TaskManager;
+import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.util.OptionalFailure;
 import org.apache.flink.util.SerializedValue;
 
@@ -157,6 +163,10 @@ public interface AccessExecutionGraph {
 	 * @return map containing serialized values of user-defined accumulators
 	 */
 	Map<String, SerializedValue<OptionalFailure<Object>>> getAccumulatorsSerialized();
+
+
+
+	Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> getResultLocationTracker();
 
 	/**
 	 * Returns whether this execution graph was archived.

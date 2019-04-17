@@ -92,6 +92,7 @@ import org.apache.flink.util.Preconditions;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * A DataSet represents a collection of elements of the same type.
@@ -1791,8 +1792,8 @@ public abstract class DataSet<T> {
 		return sink;
 	}
 
-	public DataSink<T> cache() {
-		DataSink<T> sink = new CachedDataSink<>(this, getType());
+	public DataSink<T> cache(UUID uuid) {
+		DataSink<T> sink = new CachedDataSink<>(uuid, this, getType());
 		this.context.registerDataSink(sink);
 		return sink;
 	}

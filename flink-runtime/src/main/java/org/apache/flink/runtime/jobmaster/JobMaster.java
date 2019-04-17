@@ -129,6 +129,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -598,11 +599,9 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 			final IntermediateDataSetID intermediateResultId,
 			final ResultPartitionID resultPartitionId) {
 
-		final Execution execution = executionGraph.getRegisteredExecutions().get(resultPartitionId.getProducerId());
-		if (execution != null) {
-			return CompletableFuture.completedFuture(execution.getState());
-		}
-		else {
+		Throwable throwable = null;
+		Execution execution = executionGraph.getRegisteredExecutions().get(resultPartitionId.getProducerId());
+		if (execution == null) {
 			final IntermediateResult intermediateResult =
 					executionGraph.getAllIntermediateResults().get(intermediateResultId);
 
@@ -614,14 +613,19 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 						.getCurrentExecutionAttempt();
 
 				if (producerExecution.getAttemptId().equals(resultPartitionId.getProducerId())) {
-					return CompletableFuture.completedFuture(producerExecution.getState());
+					execution = producerExecution;
 				} else {
-					return FutureUtils.completedExceptionally(new PartitionProducerDisposedException(resultPartitionId));
+					throwable = new PartitionProducerDisposedException(resultPartitionId);
 				}
 			} else {
-				return FutureUtils.completedExceptionally(new IllegalArgumentException("Intermediate data set with ID "
-						+ intermediateResultId + " not found."));
+				throwable = new IllegalArgumentException("Intermediate data set with ID "
+						+ intermediateResultId + " not found.");
 			}
+		}
+		if (execution != null) {
+			return CompletableFuture.completedFuture(execution.getState());
+		} else {
+			return FutureUtils.completedExceptionally(throwable);
 		}
 	}
 

@@ -19,6 +19,7 @@
 package org.apache.flink.table.interactive.util;
 
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.service.ServiceDescriptor;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.descriptors.SchemaValidator;
@@ -27,10 +28,12 @@ import org.apache.flink.util.InstantiationUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.util.hashing.MurmurHash3;
 
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -136,4 +139,5 @@ public final class TableServiceUtil {
 			throw new RuntimeException(ioe.getMessage());
 		}
 	}
+
 }

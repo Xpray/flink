@@ -21,6 +21,7 @@ package org.apache.flink.api.common.operators;
 import java.util.List;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.UUID;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.ExecutionConfig;
@@ -54,6 +55,8 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	private Ordering localOrdering;
 
 	private boolean cachedSink;
+
+	private UUID uuid;
 
 	// --------------------------------------------------------------------------------------------
 
@@ -278,6 +281,14 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 
 	public void setCachedSink(boolean cachedSink) {
 		this.cachedSink = cachedSink;
+	}
+
+	public UUID getUuid() {
+		return uuid;
+	}
+
+	public void setUuid(UUID uuid) {
+		this.uuid = uuid;
 	}
 
 	// --------------------------------------------------------------------------------------------

@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ArchivedExecutionConfig;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.flink.api.common.accumulators.AccumulatorHelper;
 import org.apache.flink.api.common.time.Time;
@@ -53,6 +54,7 @@ import org.apache.flink.runtime.executiongraph.restart.RestartCallback;
 import org.apache.flink.runtime.executiongraph.restart.RestartStrategy;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -67,7 +69,9 @@ import org.apache.flink.runtime.query.KvStateLocationRegistry;
 import org.apache.flink.runtime.state.SharedStateRegistry;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.taskmanager.TaskExecutionState;
+import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.types.Either;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OptionalFailure;
@@ -759,6 +763,54 @@ public class ExecutionGraph implements AccessExecutionGraph {
 		}
 
 		return userAccumulators;
+	}
+
+	public void addLocation(
+		Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker,
+		IntermediateResultPartition intermediateResultPartition) {
+
+		IntermediateDataSetID dataSetID = intermediateResultPartition.getIntermediateResult().getId();
+
+		Map<IntermediateResultPartitionID, ResultLocation> map = resultLocationTracker.get(dataSetID);
+		if (map == null) {
+			map = new HashMap<>();
+			resultLocationTracker.put(dataSetID, map);
+		}
+
+		try {
+			TaskManagerLocation taskManagerLocation =
+				intermediateResultPartition.getProducer()
+					.getCurrentExecutionAttempt().getTaskManagerLocationFuture().get();
+			AbstractID producerId = intermediateResultPartition.getProducer()
+				.getCurrentExecutionAttempt().getAttemptId();
+			ResultLocation resultLocation = new ResultLocation(
+				taskManagerLocation.address(),
+				taskManagerLocation.dataPort(),
+				producerId
+			);
+			map.put(intermediateResultPartition.getPartitionId(), resultLocation);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> getResultLocationTracker() {
+
+		Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultLocation>> resultLocationTracker = new HashMap<>();
+
+
+		for (ExecutionVertex executionVertex : getAllExecutionVertices()) {
+			for (IntermediateResultPartition intermediateResultPartition : executionVertex.getProducedPartitions().values()) {
+				addLocation(
+					resultLocationTracker,
+					intermediateResultPartition);
+			}
+		}
+
+		return resultLocationTracker;
 	}
 
 	/**

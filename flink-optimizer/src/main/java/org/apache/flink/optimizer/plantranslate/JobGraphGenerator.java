@@ -102,6 +102,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -965,6 +966,8 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		vertex.setResources(node.getMinResources(), node.getPreferredResources());
 		if (node.getSinkNode().getOperator().isCachedSink()) {
 			vertex.setCached(true);
+			UUID uuid = node.getSinkNode().getOperator().getUuid();
+			vertex.setIntermediateDataSetID(new IntermediateDataSetID(uuid));
 		}
 		vertex.setInvokableClass(DataSinkTask.class);
 		vertex.setFormatDescription(getDescriptionForUserCode(node.getProgramOperator().getUserCodeWrapper()));

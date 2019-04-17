@@ -38,7 +38,7 @@ import scala.concurrent.ExecutionContext
   */
 class TableServiceManager(tEnv: TableEnvironment) {
 
-  private val toBeCachedTables = new java.util.IdentityHashMap[LogicalNode, String]
+  private[flink] val toBeCachedTables = new java.util.IdentityHashMap[LogicalNode, String]
 
   private[flink] val cachedTables = new java.util.IdentityHashMap[LogicalNode, String]
 

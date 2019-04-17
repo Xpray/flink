@@ -20,6 +20,7 @@ package org.apache.flink.api.common;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.OptionalFailure;
 
 import java.util.Collections;
@@ -38,6 +39,8 @@ public class JobExecutionResult extends JobSubmissionResult {
 
 	private final Map<String, OptionalFailure<Object>> accumulatorResults;
 
+	private final Map<AbstractID, Map<AbstractID, ResultLocation>> resultLocations;
+
 	/**
 	 * Creates a new JobExecutionResult.
 	 *
@@ -46,6 +49,11 @@ public class JobExecutionResult extends JobSubmissionResult {
 	 * @param accumulators A map of all accumulators produced by the job.
 	 */
 	public JobExecutionResult(JobID jobID, long netRuntime, Map<String, OptionalFailure<Object>> accumulators) {
+		this(jobID, netRuntime, accumulators, null);
+	}
+
+	public JobExecutionResult(JobID jobID, long netRuntime, Map<String, OptionalFailure<Object>> accumulators,
+							  Map<AbstractID, Map<AbstractID, ResultLocation>> resultLocations) {
 		super(jobID);
 		this.netRuntime = netRuntime;
 
@@ -53,6 +61,12 @@ public class JobExecutionResult extends JobSubmissionResult {
 			this.accumulatorResults = accumulators;
 		} else {
 			this.accumulatorResults = Collections.emptyMap();
+		}
+
+		if (resultLocations != null) {
+			this.resultLocations = resultLocations;
+		} else {
+			this.resultLocations = Collections.emptyMap();
 		}
 	}
 
@@ -102,6 +116,11 @@ public class JobExecutionResult extends JobSubmissionResult {
 			.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getUnchecked()));
 	}
 
+
+	public Map<AbstractID, Map<AbstractID, ResultLocation>> getResultLocations() {
+		return resultLocations;
+	}
+
 	/**
 	 * Gets the accumulator with the given name as an integer.
 	 *
@@ -132,6 +151,6 @@ public class JobExecutionResult extends JobSubmissionResult {
 	 */
 	@Deprecated
 	public static JobExecutionResult fromJobSubmissionResult(JobSubmissionResult result) {
-		return new JobExecutionResult(result.getJobID(), -1, null);
+		return new JobExecutionResult(result.getJobID(), -1, null, null);
 	}
 }
