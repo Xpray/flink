@@ -27,7 +27,7 @@ import org.apache.flink.table.sinks.BatchTableSink
 import org.apache.flink.table.sources.BatchTableSource
 import org.apache.flink.types.Row
 
-class TableServiceFactory extends BatchTableSinkFactory[Row]
+class IntermediateResultTableFactory extends BatchTableSinkFactory[Row]
   with BatchTableSourceFactory[Row] {
 
   private var tEnv: TableEnvironment = _
@@ -39,8 +39,9 @@ class TableServiceFactory extends BatchTableSinkFactory[Row]
     TableServiceUtil.putAllProperties(config, properties)
 
     val tableName = TableServiceUtil.getTableNameFromConfig(config)
-    val schema = TableServiceUtil.readSchemaFromConfig(config, classOf[TableServiceFactory].getClassLoader)
-    val sink = new TableServiceSink(
+    val schema = TableServiceUtil
+      .readSchemaFromConfig(config, classOf[IntermediateResultTableFactory].getClassLoader)
+    val sink = new IntermediateResultTableSink(
       tEnv,
       config,
       tableName,
@@ -55,7 +56,8 @@ class TableServiceFactory extends BatchTableSinkFactory[Row]
     TableServiceUtil.putAllProperties(config, properties)
 
     val tableName = TableServiceUtil.getTableNameFromConfig(config)
-    val schema = TableServiceUtil.readSchemaFromConfig(config, classOf[TableServiceFactory].getClassLoader)
+    val schema = TableServiceUtil
+      .readSchemaFromConfig(config, classOf[IntermediateResultTableFactory].getClassLoader)
 
     new IntermediateResultTableSource(
       tEnv,

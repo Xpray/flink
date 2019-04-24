@@ -53,7 +53,7 @@ import org.apache.flink.table.descriptors.{ConnectorDescriptor, TableDescriptor}
 import org.apache.flink.table.expressions._
 import org.apache.flink.table.functions.utils.UserDefinedFunctionUtils._
 import org.apache.flink.table.functions.{AggregateFunction, ScalarFunction, TableFunction}
-import org.apache.flink.table.interactive.TableServiceManager
+import org.apache.flink.table.interactive.TableCacheManager
 import org.apache.flink.table.plan.cost.DataSetCostFactory
 import org.apache.flink.table.plan.logical.{CatalogNode, LogicalRelNode}
 import org.apache.flink.table.plan.nodes.FlinkConventions
@@ -116,8 +116,8 @@ abstract class TableEnvironment(val config: TableConfig) {
     new ExpressionBridge[PlannerExpression](functionCatalog, PlannerExpressionConverter.INSTANCE)
 
   // a manager for table service
-  private[flink] val tableServiceManager: TableServiceManager =
-    new TableServiceManager(this)
+  private[flink] val tableCacheManager: TableCacheManager =
+    new TableCacheManager(this)
 
   /** Returns the table config to define the runtime behavior of the Table API. */
   def getConfig: TableConfig = config

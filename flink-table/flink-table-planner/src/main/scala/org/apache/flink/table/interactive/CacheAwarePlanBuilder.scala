@@ -55,7 +55,7 @@ class CacheAwarePlanBuilder(tEnv: TableEnvironment) {
     // clear the map, because the new created tree can also be changed again
     originalNewNodeMap.clear()
 
-    if (tEnv.tableServiceManager.toBeCachedTables.size() > 0) {
+    if (tEnv.tableCacheManager.toBeCachedTables.size() > 0) {
       buildPlan(sinkNodes)
     } else {
       sinkNodes
@@ -66,7 +66,7 @@ class CacheAwarePlanBuilder(tEnv: TableEnvironment) {
     nodes.map { node =>
       // if the original node has been rebuilt/cloned, just reuse it.
       Option(originalNewNodeMap.get(node)).getOrElse {
-        val tableName = tEnv.tableServiceManager.getToBeCachedTableName(node)
+        val tableName = tEnv.tableCacheManager.getToBeCachedTableName(node)
         val newNode = tableName match {
           // if a child node(table) has been cached successfully, create a Source node
           case Some(name) if checkIntermediateResult(name)
@@ -90,10 +90,10 @@ class CacheAwarePlanBuilder(tEnv: TableEnvironment) {
   }
 
   private class CacheSourceSinkTableBuilder(name: String, logicalPlan: LogicalNode) {
-    var tableFactory : Option[TableFactory] = tEnv.tableServiceManager.getTableServiceFactory()
+    var tableFactory : Option[TableFactory] = tEnv.tableCacheManager.getTableServiceFactory()
     var schema: Option[TableSchema] = None
     var properties: Option[Configuration] =
-      tEnv.tableServiceManager.getTableServiceFactoryProperties()
+      tEnv.tableCacheManager.getTableServiceFactoryProperties()
 
     tableFactory match {
       case Some(factory: TableServiceFactory) => factory.setTableEnv(tEnv)

@@ -26,7 +26,7 @@ import org.apache.flink.table.plan.logical.LogicalNode
 /**
   * TableServiceManager is responsible for table service and cached table management.
   */
-class TableServiceManager(tEnv: TableEnvironment) {
+class TableCacheManager(tEnv: TableEnvironment) {
 
   private[flink] val toBeCachedTables = new java.util.IdentityHashMap[LogicalNode, String]
 

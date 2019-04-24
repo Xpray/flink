@@ -442,9 +442,9 @@ class TableImpl(
 
   override def cache(): Unit = {
     // check if it has been already cached.
-    (tableEnv.tableServiceManager.getToBeCachedTableName(logicalPlan) orElse
-      tableEnv.tableServiceManager.getToBeCachedTableName(logicalPlan)) match {
-      case None => tableEnv.tableServiceManager.cacheTable(this)
+    (tableEnv.tableCacheManager.getToBeCachedTableName(logicalPlan) orElse
+      tableEnv.tableCacheManager.getToBeCachedTableName(logicalPlan)) match {
+      case None => tableEnv.tableCacheManager.cacheTable(this)
       case Some(_) =>
     }
   }

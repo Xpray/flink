@@ -22,8 +22,8 @@ package org.apache.flink.runtime.io.network.partition;
  * Type of a result partition.
  */
 public enum ResultPartitionType {
-
-	BLOCKING_PERSISTENT(false, false, false),
+	
+	BLOCKING_PERSISTENT(false, false, false, true),
 
 	BLOCKING(false, false, false),
 
@@ -51,13 +51,21 @@ public enum ResultPartitionType {
 	/** Does this partition use a limited number of (network) buffers? */
 	private final boolean isBounded;
 
+	/** This partition will not be deleted after consuming*/
+	private final boolean persistent;
+
 	/**
 	 * Specifies the behaviour of an intermediate result partition at runtime.
 	 */
 	ResultPartitionType(boolean isPipelined, boolean hasBackPressure, boolean isBounded) {
+		this(isPipelined, hasBackPressure, isBounded, false);
+	}
+
+	ResultPartitionType(boolean isPipelined, boolean hasBackPressure, boolean isBounded, boolean persistent) {
 		this.isPipelined = isPipelined;
 		this.hasBackPressure = hasBackPressure;
 		this.isBounded = isBounded;
+		this.persistent = persistent;
 	}
 
 	public boolean hasBackPressure() {
@@ -79,5 +87,9 @@ public enum ResultPartitionType {
 	 */
 	public boolean isBounded() {
 		return isBounded;
+	}
+
+	public boolean isPersistent() {
+		return persistent;
 	}
 }

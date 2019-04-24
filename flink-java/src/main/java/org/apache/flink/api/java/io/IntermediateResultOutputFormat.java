@@ -16,32 +16,43 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.java.operators;
+package org.apache.flink.api.java.io;
 
-import org.apache.flink.api.common.operators.GenericDataSinkBase;
-import org.apache.flink.api.common.operators.Operator;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.io.DiscardingOutputFormat;
-import org.apache.flink.api.java.operators.DataSink;
+import org.apache.flink.api.common.io.OutputFormat;
+import org.apache.flink.configuration.Configuration;
 
+import java.io.IOException;
 import java.util.UUID;
 
-public class CachedDataSink<T> extends DataSink<T> {
+public class IntermediateResultOutputFormat<T> implements OutputFormat<T> {
 
 	private final UUID uuid;
 
-	public CachedDataSink(UUID uuid, DataSet<T> data, TypeInformation<T> type) {
-		super(data, new DiscardingOutputFormat(), type);
+	public IntermediateResultOutputFormat(UUID uuid) {
 		this.uuid = uuid;
 	}
 
 	@Override
-	protected GenericDataSinkBase<T> translateToDataFlow(Operator<T> input) {
-		GenericDataSinkBase<T> sink =  super.translateToDataFlow(input);
-		sink.setCachedSink(true);
-		sink.setUuid(uuid);
-		return sink;
+	public void configure(Configuration parameters) {
+
 	}
 
+	@Override
+	public void open(int taskNumber, int numTasks) throws IOException {
+
+	}
+
+	@Override
+	public void writeRecord(T record) throws IOException {
+
+	}
+
+	@Override
+	public void close() throws IOException {
+
+	}
+
+	public UUID getUuid() {
+		return uuid;
+	}
 }

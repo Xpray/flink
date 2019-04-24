@@ -27,7 +27,6 @@ import org.apache.flink.api.common.cache.DistributedCache;
 import org.apache.flink.api.common.distributions.DataDistribution;
 import org.apache.flink.api.common.operators.util.UserCodeWrapper;
 import org.apache.flink.api.common.typeutils.TypeSerializerFactory;
-import org.apache.flink.api.java.operators.CachedDataSink;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.AlgorithmOptions;
 import org.apache.flink.configuration.ConfigConstants;

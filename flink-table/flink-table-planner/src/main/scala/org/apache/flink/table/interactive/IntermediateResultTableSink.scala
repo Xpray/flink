@@ -20,17 +20,16 @@ package org.apache.flink.table.interactive
 
 import java.util.UUID
 
-import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.DataSet
+import org.apache.flink.api.java.io.IntermediateResultOutputFormat
 import org.apache.flink.api.java.typeutils.RowTypeInfo
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.table.api.TableEnvironment
 import org.apache.flink.table.sinks.{BatchTableSink, TableSinkBase}
 import org.apache.flink.types.Row
-import org.apache.flink.util.Collector
 
-class TableServiceSink(
+class IntermediateResultTableSink(
   tableEnv: TableEnvironment,
   tableProperties: Configuration,
   tableName: String,
@@ -38,34 +37,17 @@ class TableServiceSink(
   extends TableSinkBase[Row] with BatchTableSink[Row] {
 
   override protected def copy(): TableSinkBase[Row] = {
-    new TableServiceSink(tableEnv, tableProperties, tableName, resultType)
+    new IntermediateResultTableSink(tableEnv, tableProperties, tableName, resultType)
   }
 
   override def emitDataSet(dataSet: DataSet[Row]): Unit = {
-    dataSet
-      //.flatMap(new TableServiceFlatMapFunction(tableName, tableProperties))
-      .cache(UUID.fromString(tableName))
+    val outputFormat = new IntermediateResultOutputFormat[Row](UUID.fromString(tableName))
+    dataSet.output(outputFormat)
       .setParallelism(1)
-      .name("CachedTableSink")
+      .name(s"IntermediateResultOutputFormat:$tableName")
   }
 
   override def getOutputType: TypeInformation[Row] = resultType
 }
 
-class TableServiceFlatMapFunction(
-  tableName: String,
-  tableProperties: Configuration) extends RichFlatMapFunction[Row, Row] {
-
-  override def open(parameters: Configuration): Unit = {
-    println("TableServiceFlatMapFunction open")
-  }
-
-  override def close(): Unit = {
-    println("TableServiceFlatMapFunction close")
-  }
-
-  override def flatMap(value: Row, out: Collector[Row]): Unit = {
-    out.collect(value)
-  }
-}
 
