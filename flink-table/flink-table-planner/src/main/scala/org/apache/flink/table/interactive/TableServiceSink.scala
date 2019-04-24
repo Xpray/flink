@@ -37,8 +37,9 @@ class TableServiceSink(
   resultType: RowTypeInfo)
   extends TableSinkBase[Row] with BatchTableSink[Row] {
 
-  override protected def copy(): TableSinkBase[Row] =
+  override protected def copy(): TableSinkBase[Row] = {
     new TableServiceSink(tableEnv, tableProperties, tableName, resultType)
+  }
 
   override def emitDataSet(dataSet: DataSet[Row]): Unit = {
     dataSet

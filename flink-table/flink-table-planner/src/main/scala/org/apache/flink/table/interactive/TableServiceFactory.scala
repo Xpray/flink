@@ -40,16 +40,30 @@ class TableServiceFactory extends BatchTableSinkFactory[Row]
 
     val tableName = TableServiceUtil.getTableNameFromConfig(config)
     val schema = TableServiceUtil.readSchemaFromConfig(config, classOf[TableServiceFactory].getClassLoader)
-    new TableServiceSink(
+    val sink = new TableServiceSink(
       tEnv,
       config,
       tableName,
       new RowTypeInfo(schema.getFieldTypes, schema.getFieldNames)
     )
-
+    val configuredSink = sink.configure(schema.getFieldNames, schema.getFieldTypes)
+    configuredSink.asInstanceOf[BatchTableSink[Row]]
   }
 
-  override def createBatchTableSource(properties: java.util.Map[String, String]): BatchTableSource[Row] = ???
+  override def createBatchTableSource(properties: java.util.Map[String, String]): BatchTableSource[Row] = {
+    val config = new Configuration()
+    TableServiceUtil.putAllProperties(config, properties)
+
+    val tableName = TableServiceUtil.getTableNameFromConfig(config)
+    val schema = TableServiceUtil.readSchemaFromConfig(config, classOf[TableServiceFactory].getClassLoader)
+
+    new IntermediateResultTableSource(
+      tEnv,
+      config,
+      tableName,
+      new RowTypeInfo(schema.getFieldTypes, schema.getFieldNames)
+    )
+  }
 
   override def requiredContext(): java.util.Map[String, String] =
     java.util.Collections.emptyMap()

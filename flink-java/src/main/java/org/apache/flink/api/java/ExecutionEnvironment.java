@@ -26,6 +26,7 @@ import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.Plan;
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.api.common.cache.DistributedCache.DistributedCacheEntry;
 import org.apache.flink.api.common.io.FileInputFormat;
 import org.apache.flink.api.common.io.InputFormat;
@@ -71,9 +72,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -115,6 +118,8 @@ public abstract class ExecutionEnvironment {
 	private final List<Tuple2<String, DistributedCacheEntry>> cacheFile = new ArrayList<>();
 
 	private final ExecutionConfig config = new ExecutionConfig();
+
+	private final Map<AbstractID, Map<AbstractID, ResultLocation>> resultLocations = new HashMap<>();
 
 	/** Result from the latest execution, to make it retrievable when using eager execution methods. */
 	protected JobExecutionResult lastJobExecutionResult;
@@ -815,7 +820,9 @@ public abstract class ExecutionEnvironment {
 	 * @throws Exception Thrown, if the program executions fails.
 	 */
 	public JobExecutionResult execute() throws Exception {
-		return execute(getDefaultName());
+		JobExecutionResult result =  execute(getDefaultName());
+		this.resultLocations.putAll(result.getResultLocations());
+		return result;
 	}
 
 	/**
@@ -1275,5 +1282,13 @@ public abstract class ExecutionEnvironment {
 	@Internal
 	public static boolean areExplicitEnvironmentsAllowed() {
 		return contextEnvironmentFactory == null;
+	}
+
+	/**
+	 * used for cache.
+	 * @return
+	 */
+	public Map<AbstractID, Map<AbstractID, ResultLocation>> getResultLocations() {
+		return resultLocations;
 	}
 }

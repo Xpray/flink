@@ -471,7 +471,9 @@ abstract class BatchTableEnvironment(
   protected def translate[A](
       table: Table,
       queryConfig: BatchQueryConfig)(implicit tpe: TypeInformation[A]): DataSet[A] = {
-    val relNode = table.asInstanceOf[TableImpl].getRelNode
+    val optPlan = tableServiceManager.cachePlanBuilder
+      .buildPlanIfNeeded(Seq(table.asInstanceOf[TableImpl].logicalPlan))
+    val relNode = new TableImpl(this, optPlan.head).getRelNode
     val dataSetPlan = optimize(relNode)
     translate(dataSetPlan, relNode.getRowType, queryConfig)
   }

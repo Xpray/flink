@@ -440,11 +440,14 @@ class TableImpl(
     new OverWindowedTableImpl(this, overWindows)
   }
 
-  /**
-    * The Flink Planner do not support cache for the moment.
-    */
-  override def cache(): Table =
-    throw new TableException("Flink Planner do not support cache() now.")
+  override def cache(): Unit = {
+    // check if it has been already cached.
+    (tableEnv.tableServiceManager.getToBeCachedTableName(logicalPlan) orElse
+      tableEnv.tableServiceManager.getToBeCachedTableName(logicalPlan)) match {
+      case None => tableEnv.tableServiceManager.cacheTable(this)
+      case Some(_) =>
+    }
+  }
 
   /**
     * The Flink Planner do not support invalidateCache for the moment.

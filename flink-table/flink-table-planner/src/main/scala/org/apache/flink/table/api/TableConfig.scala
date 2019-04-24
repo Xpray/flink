@@ -156,23 +156,6 @@ class TableConfig {
   }
 
   /**
-    * Defines the ServiceDescriptor for TableService.
-    */
-  private var tableServiceDescriptor: ServiceDescriptor = _
-
-  def getTableServiceDescriptor(): ServiceDescriptor = {
-    if (tableServiceDescriptor == null) {
-      TableServiceUtil.createTableServiceDescriptor(this.conf)
-    } else {
-      tableServiceDescriptor
-    }
-  }
-
-  def setTableServiceDescriptor(descriptor: ServiceDescriptor): Unit = {
-    tableServiceDescriptor = descriptor
-  }
-
-  /**
     * Defines the FlinkTableServiceFactoryDescriptor for TableService.
     */
   private var tableServiceFactoryDescriptor: FlinkTableServiceFactoryDescriptor = {

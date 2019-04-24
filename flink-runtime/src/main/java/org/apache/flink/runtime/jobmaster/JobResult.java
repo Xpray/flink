@@ -176,11 +176,11 @@ public class JobResult implements Serializable {
 				Map<AbstractID, ResultLocation> map = new HashMap<>();
 				for (Map.Entry<IntermediateResultPartitionID, ResultLocation> locationEntry : entry.getValue().entrySet()) {
 					map.put(
-						locationEntry.getKey(),
+						new AbstractID(locationEntry.getKey()),
 						locationEntry.getValue()
 					);
 				}
-				resultLocations.put(entry.getKey(), map);
+				resultLocations.put(new AbstractID(entry.getKey()), map);
 			}
 		}
 		return resultLocations;

@@ -18,9 +18,13 @@
 
 package org.apache.flink.runtime.jobgraph;
 
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.operators.util.UserCodeWrapper;
+import org.apache.flink.api.java.io.IntermediateResultInputFormat;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.operators.util.TaskConfig;
+import org.apache.flink.util.AbstractID;
 
 import java.util.List;
 
@@ -29,8 +33,13 @@ public class InputFormatVertex extends JobVertex {
 	private static final long serialVersionUID = 1L;
 	
 	private String formatDescription;
-	
-	
+
+	private boolean cached;
+
+	private IntermediateDataSetID intermediateDataSetID;
+
+	private List<Tuple2<AbstractID, ResultLocation>> resultLocations;
+
 	public InputFormatVertex(String name) {
 		super(name);
 	}
@@ -84,6 +93,9 @@ public class InputFormatVertex extends JobVertex {
 		try {
 			thread.setContextClassLoader(loader);
 			inputFormat.configure(cfg.getStubParameters());
+			if (inputFormat instanceof IntermediateResultInputFormat) {
+				((IntermediateResultInputFormat) inputFormat).initResultLocations(resultLocations);
+			}
 		}
 		catch (Throwable t) {
 			throw new Exception("Configuring the InputFormat (" + formatDescription + ") failed: " + t.getMessage(), t);
@@ -93,5 +105,29 @@ public class InputFormatVertex extends JobVertex {
 		}
 		
 		setInputSplitSource(inputFormat);
+	}
+
+	public boolean isCached() {
+		return cached;
+	}
+
+	public void setCached(boolean cached) {
+		this.cached = cached;
+	}
+
+	public IntermediateDataSetID getIntermediateDataSetID() {
+		return intermediateDataSetID;
+	}
+
+	public void setIntermediateDataSetID(IntermediateDataSetID intermediateDataSetID) {
+		this.intermediateDataSetID = intermediateDataSetID;
+	}
+
+	public List<Tuple2<AbstractID, ResultLocation>> getResultLocations() {
+		return resultLocations;
+	}
+
+	public void setResultLocations(List<Tuple2<AbstractID, ResultLocation>> resultLocations) {
+		this.resultLocations = resultLocations;
 	}
 }

@@ -156,9 +156,10 @@ public class OutputFormatVertex extends JobVertex {
 
 	@Override
 	public JobEdge connectNewDataSetAsInput(JobVertex input, DistributionPattern distPattern, ResultPartitionType partitionType) {
-
+		if (!isCached()) {
+			return super.connectNewDataSetAsInput(input, distPattern, partitionType);
+		}
 		IntermediateDataSet dataSet = input.createAndAddResultDataSet(intermediateDataSetID, partitionType);
-
 		JobEdge edge = new JobEdge(dataSet, this, distPattern);
 		getInputs().add(edge);
 		dataSet.addConsumer(edge);

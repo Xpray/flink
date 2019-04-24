@@ -67,6 +67,7 @@ import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.OutputFormatVertex;
+import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
 import org.apache.flink.runtime.operators.BatchTask;
 import org.apache.flink.runtime.operators.CoGroupDriver;
@@ -75,6 +76,7 @@ import org.apache.flink.runtime.operators.CoGroupWithSolutionSetSecondDriver;
 import org.apache.flink.runtime.operators.DataSinkTask;
 import org.apache.flink.runtime.operators.DataSourceTask;
 import org.apache.flink.runtime.operators.DriverStrategy;
+import org.apache.flink.runtime.operators.IntermediateResultSourceTask;
 import org.apache.flink.runtime.operators.JoinDriver;
 import org.apache.flink.runtime.operators.JoinWithSolutionSetFirstDriver;
 import org.apache.flink.runtime.operators.JoinWithSolutionSetSecondDriver;
@@ -947,14 +949,23 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		final InputFormatVertex vertex = new InputFormatVertex(node.getNodeName());
 		final TaskConfig config = new TaskConfig(vertex.getConfiguration());
 
+		Class<? extends AbstractInvokable> invokableClass = DataSourceTask.class;
+		if (node.getDataSourceNode().getOperator().isCachedSource()) {
+			vertex.setCached(true);
+			UUID uuid = node.getDataSourceNode().getOperator().getUuid();
+			vertex.setIntermediateDataSetID(new IntermediateDataSetID(uuid));
+			vertex.setResultLocations(node.getDataSourceNode().getOperator().getResultLocations());
+			invokableClass = IntermediateResultSourceTask.class;
+			config.setResultLocations(node.getDataSourceNode().getOperator().getResultLocations());
+		}
+
 		vertex.setResources(node.getMinResources(), node.getPreferredResources());
-		vertex.setInvokableClass(DataSourceTask.class);
+		vertex.setInvokableClass(invokableClass);
 		vertex.setFormatDescription(getDescriptionForUserCode(node.getProgramOperator().getUserCodeWrapper()));
 
 		// set user code
 		config.setStubWrapper(node.getProgramOperator().getUserCodeWrapper());
 		config.setStubParameters(node.getProgramOperator().getParameters());
-
 		config.setOutputSerializer(node.getSerializer());
 		return vertex;
 	}

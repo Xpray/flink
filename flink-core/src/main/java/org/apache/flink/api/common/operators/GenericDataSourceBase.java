@@ -21,9 +21,11 @@ package org.apache.flink.api.common.operators;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.api.common.functions.Partitioner;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.io.InputFormat;
@@ -32,7 +34,9 @@ import org.apache.flink.api.common.operators.util.UserCodeClassWrapper;
 import org.apache.flink.api.common.operators.util.UserCodeObjectWrapper;
 import org.apache.flink.api.common.operators.util.UserCodeWrapper;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.io.InputSplit;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.Visitor;
 
 /**
@@ -51,6 +55,12 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	protected String statisticsKey;
 
 	private SplitDataProperties splitProperties;
+
+	private boolean cachedSource;
+
+	private UUID uuid;
+
+	private List<Tuple2<AbstractID, ResultLocation>> resultLocations;
 
 	/**
 	 * Creates a new instance for the given file using the given input format.
@@ -245,7 +255,31 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 
 		return result;
 	}
-	
+
+	public boolean isCachedSource() {
+		return cachedSource;
+	}
+
+	public void setCachedSource(boolean cachedSource) {
+		this.cachedSource = cachedSource;
+	}
+
+	public UUID getUuid() {
+		return uuid;
+	}
+
+	public void setUuid(UUID uuid) {
+		this.uuid = uuid;
+	}
+
+	public List<Tuple2<AbstractID, ResultLocation>> getResultLocations() {
+		return resultLocations;
+	}
+
+	public void setResultLocations(List<Tuple2<AbstractID, ResultLocation>> resultLocations) {
+		this.resultLocations = resultLocations;
+	}
+
 	// --------------------------------------------------------------------------------------------
 	
 	public String toString() {

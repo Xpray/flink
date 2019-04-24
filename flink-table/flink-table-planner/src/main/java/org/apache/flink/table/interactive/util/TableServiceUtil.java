@@ -24,6 +24,7 @@ import org.apache.flink.service.ServiceDescriptor;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.descriptors.SchemaValidator;
 import org.apache.flink.table.interactive.FlinkTableServiceFactoryDescriptor;
+import org.apache.flink.table.interactive.TableServiceFactory;
 import org.apache.flink.util.InstantiationUtil;
 
 import org.slf4j.Logger;
@@ -60,31 +61,9 @@ public final class TableServiceUtil {
 
 	private TableServiceUtil() {}
 
-	public static ServiceDescriptor createTableServiceDescriptor(Configuration config) {
-		ServiceDescriptor tableServiceDescriptor = new ServiceDescriptor()
-			.setServiceClassName(config.getString(TABLE_SERVICE_CLASS_NAME))
-			.setServiceParallelism(config.getInteger(TABLE_SERVICE_PARALLELISM))
-			.setServiceHeapMemoryMb(config.getInteger(TABLE_SERVICE_HEAP_MEMORY_MB))
-			.setServiceDirectMemoryMb(config.getInteger(TABLE_SERVICE_DIRECT_MEMORY_MB))
-			.setServiceNativeMemoryMb(config.getInteger(TABLE_SERVICE_NATIVE_MEMORY_MB))
-			.setServiceCpuCores(config.getDouble(TABLE_SERVICE_CPU_CORES));
-
-		tableServiceDescriptor.getConfiguration().addAll(config);
-
-		tableServiceDescriptor.getConfiguration().setInteger(TABLE_SERVICE_READY_RETRY_TIMES, config.getInteger(TABLE_SERVICE_READY_RETRY_TIMES));
-		tableServiceDescriptor.getConfiguration().setLong(TABLE_SERVICE_READY_RETRY_BACKOFF_MS, config.getLong(TABLE_SERVICE_READY_RETRY_BACKOFF_MS));
-		if (config.getString(TABLE_SERVICE_STORAGE_ROOT_PATH) != null) {
-			tableServiceDescriptor.getConfiguration().setString(TABLE_SERVICE_STORAGE_ROOT_PATH, config.getString(TABLE_SERVICE_STORAGE_ROOT_PATH));
-		}
-		tableServiceDescriptor.getConfiguration().setInteger(TABLE_SERVICE_CLIENT_READ_BUFFER_SIZE, config.getInteger(TABLE_SERVICE_CLIENT_READ_BUFFER_SIZE));
-		tableServiceDescriptor.getConfiguration().setInteger(TABLE_SERVICE_CLIENT_WRITE_BUFFER_SIZE, config.getInteger(TABLE_SERVICE_CLIENT_WRITE_BUFFER_SIZE));
-
-		return tableServiceDescriptor;
-	}
-
 	public static FlinkTableServiceFactoryDescriptor getDefaultTableServiceFactoryDescriptor(){
 		return new FlinkTableServiceFactoryDescriptor(
-			null, new Configuration());
+			new TableServiceFactory(), new Configuration());
 	}
 
 	public static void shutdownAndAwaitTermination(ExecutorService pool, long waitTimeInSeconds) {
@@ -110,6 +89,10 @@ public final class TableServiceUtil {
 		return configuration.getString(TABLE_NAME, null);
 	}
 
+	public static void putTableNameToConfig(Configuration configuration, String tableName) {
+		configuration.setString(TABLE_NAME, tableName);
+	}
+
 	public static void putAllProperties(Configuration configuration, Map<String, String> properties) {
 		if (properties != null) {
 			for (Map.Entry<String, String> entry : properties.entrySet()) {
@@ -129,7 +112,7 @@ public final class TableServiceUtil {
 		}
 	}
 
-	public static void putSchemaIntoComfig(Configuration configuration, TableSchema schema) {
+	public static void putSchemaIntoConfig(Configuration configuration, TableSchema schema) {
 		try {
 			byte[] serialized = InstantiationUtil.serializeObject(schema);
 			String encoded = Base64.getEncoder().encodeToString(serialized);

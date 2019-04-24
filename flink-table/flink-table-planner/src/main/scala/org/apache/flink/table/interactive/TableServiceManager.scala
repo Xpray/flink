@@ -18,20 +18,10 @@
 
 package org.apache.flink.table.interactive
 
-import java.util.UUID
-import java.util.concurrent.{ExecutorService, Executors}
-
-import org.apache.flink.api.common.JobSubmissionResult
 import org.apache.flink.configuration.Configuration
-import org.apache.flink.service.{ServiceDescriptor, ServiceInstance}
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.table.api.{Table, TableEnvironment, TableImpl}
 import org.apache.flink.table.factories.TableFactory
-import org.apache.flink.table.interactive.rpc.{TableServiceClient, TableServiceRegistry}
-//import org.apache.flink.table.plan.CacheAwareRelNodePlanBuilder
 import org.apache.flink.table.plan.logical.LogicalNode
-
-import scala.concurrent.ExecutionContext
 
 /**
   * TableServiceManager is responsible for table service and cached table management.
@@ -40,28 +30,6 @@ class TableServiceManager(tEnv: TableEnvironment) {
 
   private[flink] val toBeCachedTables = new java.util.IdentityHashMap[LogicalNode, String]
 
-  private[flink] val cachedTables = new java.util.IdentityHashMap[LogicalNode, String]
-
-  private[flink] var tableServiceStarted = false
-
-  private[flink] var submitResult: JobSubmissionResult = _
-
-  private var tableServiceEnv: StreamExecutionEnvironment = _
-
-  private lazy val tableServiceId: String = UUID.randomUUID().toString
-
-  private var tableServiceRegistry: TableServiceRegistry = _
-
-  private val threadPool: ExecutorService = Executors.newFixedThreadPool(1)
-
-  private val executeContext: ExecutionContext =
-    ExecutionContext.fromExecutor(threadPool)
-
-  /**
-    * used for deleting table partitions.
-    */
-  private var tableServiceClient: TableServiceClient = _
-
   def getTableServiceFactory(): Option[TableFactory] = {
     Option(tEnv.getConfig.getTableServiceFactoryDescriptor().getTableFactory)
   }
@@ -69,13 +37,6 @@ class TableServiceManager(tEnv: TableEnvironment) {
   def getTableServiceFactoryProperties(): Option[Configuration] = {
     Option(tEnv.getConfig.getTableServiceFactoryDescriptor().getConfiguration)
   }
-
-  def getTableServiceDescriptor(): Option[ServiceDescriptor] = {
-    Option(tEnv.getConfig.getTableServiceDescriptor)
-  }
-
-  def getTableServiceInstance(): java.util.Map[Integer, ServiceInstance] =
-    tableServiceRegistry.getRegistedServices
 
   private[flink] val cachePlanBuilder: CacheAwarePlanBuilder =
     new CacheAwarePlanBuilder(tEnv)
@@ -92,14 +53,14 @@ class TableServiceManager(tEnv: TableEnvironment) {
 
     toBeCachedTables.put(plan, tableUUID)
 
-//    val cacheSink = cachePlanBuilder.createCacheTableSink(tableUUID, plan)
-//    tEnv.registerTableSink(tableUUID, cacheSink)
-//    tEnv.insertInto(table, tableUUID, tEnv.queryConfig)
-//
-//    val cacheSource = cachePlanBuilder.createCacheTableSource(tableUUID, plan)
-//    if (tEnv.scanInternal(Array(tableUUID)).isEmpty) {
-//      tEnv.registerTableSource(tableUUID, cacheSource)
-//    }
+    val cacheSink = cachePlanBuilder.createCacheTableSink(tableUUID, plan)
+    tEnv.registerTableSink(tableUUID, cacheSink)
+    tEnv.insertInto(table, tableUUID, tEnv.queryConfig)
+
+    val cacheSource = cachePlanBuilder.createCacheTableSource(tableUUID, plan)
+    //if (tEnv.scanInternal(Array(tableUUID)).isEmpty) {
+      tEnv.registerTableSource(tableUUID, cacheSource)
+    //}
   }
 
   def cacheTable(table: Table): Unit = {
@@ -111,8 +72,16 @@ class TableServiceManager(tEnv: TableEnvironment) {
     Option(toBeCachedTables.get(logicalPlan))
   }
 
-  private[flink] def getCachedTableName(logicalPlan: LogicalNode): Option[String] = {
-    Option(cachedTables.get(logicalPlan))
+  /**
+    * mock for now
+    * @param table
+    */
+  def invalidateCache(table: Table): Unit = {
+    val plan = table match {
+      case tableImpl: TableImpl => tableImpl.logicalPlan
+      case _ => throw new RuntimeException("Table do not support Cache().")
+    }
+    toBeCachedTables.remove(plan)
   }
 
 }

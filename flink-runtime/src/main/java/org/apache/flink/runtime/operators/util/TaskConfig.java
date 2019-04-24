@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.aggregators.AggregatorWithName;
 import org.apache.flink.api.common.aggregators.ConvergenceCriterion;
@@ -38,6 +39,7 @@ import org.apache.flink.api.common.typeutils.TypeComparatorFactory;
 import org.apache.flink.api.common.typeutils.TypePairComparatorFactory;
 import org.apache.flink.api.common.typeutils.TypeSerializerFactory;
 import org.apache.flink.api.java.operators.DeltaIteration;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.DelegatingConfiguration;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
@@ -47,6 +49,7 @@ import org.apache.flink.runtime.operators.Driver;
 import org.apache.flink.runtime.operators.chaining.ChainedDriver;
 import org.apache.flink.runtime.operators.shipping.ShipStrategyType;
 import org.apache.flink.types.Value;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.InstantiationUtil;
 
 /**
@@ -227,6 +230,10 @@ public class TaskConfig implements Serializable {
 	
 	private static final String SOLUTION_SET_OBJECTS = "itertive.ss.obj";
 
+	// ----------------------------------- Interactive ---------------------------------------------
+
+	private static final String INTERACTIVE_RESULT_LOCATIONS = "interactive.result.locations";
+
 	// ---------------------------------- Miscellaneous -------------------------------------------
 	
 	private static final char SEPARATOR = '.';
@@ -305,6 +312,24 @@ public class TaskConfig implements Serializable {
 
 	public String getStubParameter(String key, String defaultValue) {
 		return this.config.getString(STUB_PARAM_PREFIX + key, defaultValue);
+	}
+
+	public void setResultLocations(List<Tuple2<AbstractID, ResultLocation>> resultLocations) {
+		if (resultLocations != null) {
+			try {
+				InstantiationUtil.writeObjectToConfig(resultLocations, this.config, INTERACTIVE_RESULT_LOCATIONS);
+			} catch (IOException e) {
+				throw new CorruptConfigurationException("Could not write the result locations", e);
+			}
+		}
+	}
+
+	public List<Tuple2<AbstractID, ResultLocation>> getResultLocations(ClassLoader cl) {
+		try {
+			return (List<Tuple2<AbstractID, ResultLocation>>) InstantiationUtil.readObjectFromConfig(this.config, INTERACTIVE_RESULT_LOCATIONS, cl);
+		} catch (ClassNotFoundException | IOException e) {
+			throw new CorruptConfigurationException("Could not read the resultLocations: " + e.getMessage(), e);
+		}
 	}
 	
 	// --------------------------------------------------------------------------------------------

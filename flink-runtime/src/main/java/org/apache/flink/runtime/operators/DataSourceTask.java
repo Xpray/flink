@@ -24,6 +24,7 @@ import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.io.RichInputFormat;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerFactory;
+import org.apache.flink.api.java.io.IntermediateResultInputFormat;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.metrics.Counter;
@@ -289,6 +290,9 @@ public class DataSourceTask<OT> extends AbstractInvokable {
 		try {
 			thread.setContextClassLoader(userCodeClassLoader);
 			this.format.configure(this.config.getStubParameters());
+			if (this.format instanceof IntermediateResultInputFormat) {
+				((IntermediateResultInputFormat) this.format).initResultLocations(this.config.getResultLocations(userCodeClassLoader));
+			}
 		}
 		catch (Throwable t) {
 			throw new RuntimeException("The user defined 'configure()' method caused an error: " + t.getMessage(), t);

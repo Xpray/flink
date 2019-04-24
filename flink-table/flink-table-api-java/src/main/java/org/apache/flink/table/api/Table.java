@@ -917,7 +917,7 @@ public interface Table {
 	 * @return the current table with a cache hint. The original table reference is not modified
 	 *               by the execution of this method.
 	 */
-	Table cache();
+	void cache();
 
 	/**
 	 * Manually invalidate the cache of this table to release the physical resources. Users are
