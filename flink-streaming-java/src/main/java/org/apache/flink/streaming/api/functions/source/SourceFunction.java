@@ -129,7 +129,7 @@ public interface SourceFunction<T> extends Function, Serializable {
 	 *              // this synchronized block ensures that state checkpointing,
 	 *              // internal state updates and emission of elements are an atomic operation
 	 *              synchronized (ctx.getCheckpointLock()) {
-	 *                  ctx.collect(cou ont);
+	 *                  ctx.collect(count);
 	 *                  count++;
 	 *              }
 	 *          }

@@ -46,7 +46,7 @@ public class IntermediateDataSet implements java.io.Serializable {
 	// The type of partition to use at runtime
 	private final ResultPartitionType resultType;
 	
-	// -------------------,-------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------------------
 
 	public IntermediateDataSet(IntermediateDataSetID id, ResultPartitionType resultType, JobVertex producer) {
 		this.id = checkNotNull(id);

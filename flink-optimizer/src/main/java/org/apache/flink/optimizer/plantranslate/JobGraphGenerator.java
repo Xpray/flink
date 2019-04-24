@@ -154,8 +154,6 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 	
 	private SlotSharingGroup sharingGroup;
 
-	private Map<String, IntermediateDataSetID> digest2IntermediateDataSetID = new HashMap<>();
-	
 	// ------------------------------------------------------------------------
 
 	/**
@@ -1212,7 +1210,7 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		}
 
 		JobEdge edge = targetVertex.connectNewDataSetAsInput(sourceVertex, distributionPattern, resultType);
-		digest2IntermediateDataSetID.put(channel.getSource().getNodeName(), edge.getSourceId());
+
 		// -------------- configure the source task's ship strategy strategies in task config --------------
 		final int outputIndex = sourceConfig.getNumOutputs();
 		sourceConfig.addOutputShipStrategy(channel.getShipStrategy());

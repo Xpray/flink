@@ -25,7 +25,7 @@ import org.apache.flink.configuration.Configuration
 import org.apache.flink.table.api.{BatchTableEnvironment, TableEnvironment, TableImpl, TableSchema}
 import org.apache.flink.table.calcite.FlinkTypeFactory
 import org.apache.flink.table.factories.{BatchTableSinkFactory, BatchTableSourceFactory, TableFactory}
-import org.apache.flink.table.interactive.util.TableServiceUtil
+import org.apache.flink.table.interactive.util.TableCacheUtil
 import org.apache.flink.table.plan.logical.LogicalNode
 import org.apache.flink.table.sinks.TableSink
 import org.apache.flink.table.sources.TableSource
@@ -107,8 +107,8 @@ class CacheAwarePlanBuilder(tEnv: TableEnvironment) {
       ) match {
         case factory: BatchTableSinkFactory[_] => {
           val tableProperties = properties.get
-          TableServiceUtil.putTableNameToConfig(tableProperties, name)
-          TableServiceUtil.putSchemaIntoConfig(tableProperties, schema.get)
+          TableCacheUtil.putTableNameToConfig(tableProperties, name)
+          TableCacheUtil.putSchemaIntoConfig(tableProperties, schema.get)
           factory.createBatchTableSink(tableProperties.toMap)
         }
         case _ => throw new RuntimeException("Do not supported: " + tableFactory)
@@ -122,8 +122,8 @@ class CacheAwarePlanBuilder(tEnv: TableEnvironment) {
       ) match {
         case factory: BatchTableSourceFactory[_] => {
           val tableProperties = properties.get
-          TableServiceUtil.putTableNameToConfig(tableProperties, name)
-          TableServiceUtil.putSchemaIntoConfig(tableProperties, schema.get)
+          TableCacheUtil.putTableNameToConfig(tableProperties, name)
+          TableCacheUtil.putSchemaIntoConfig(tableProperties, schema.get)
           factory.createBatchTableSource(tableProperties.toMap)
         }
         case _ => throw new RuntimeException("Do not supported: " + tableFactory)

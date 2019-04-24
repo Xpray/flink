@@ -22,7 +22,7 @@ import org.apache.flink.api.java.typeutils.RowTypeInfo
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.table.api.TableEnvironment
 import org.apache.flink.table.factories.{BatchTableSinkFactory, BatchTableSourceFactory}
-import org.apache.flink.table.interactive.util.TableServiceUtil
+import org.apache.flink.table.interactive.util.TableCacheUtil
 import org.apache.flink.table.sinks.BatchTableSink
 import org.apache.flink.table.sources.BatchTableSource
 import org.apache.flink.types.Row
@@ -36,10 +36,10 @@ class IntermediateResultTableFactory extends BatchTableSinkFactory[Row]
     properties: java.util.Map[String, String]): BatchTableSink[Row] = {
 
     val config = new Configuration()
-    TableServiceUtil.putAllProperties(config, properties)
+    TableCacheUtil.putAllProperties(config, properties)
 
-    val tableName = TableServiceUtil.getTableNameFromConfig(config)
-    val schema = TableServiceUtil
+    val tableName = TableCacheUtil.getTableNameFromConfig(config)
+    val schema = TableCacheUtil
       .readSchemaFromConfig(config, classOf[IntermediateResultTableFactory].getClassLoader)
     val sink = new IntermediateResultTableSink(
       tEnv,
@@ -53,10 +53,10 @@ class IntermediateResultTableFactory extends BatchTableSinkFactory[Row]
 
   override def createBatchTableSource(properties: java.util.Map[String, String]): BatchTableSource[Row] = {
     val config = new Configuration()
-    TableServiceUtil.putAllProperties(config, properties)
+    TableCacheUtil.putAllProperties(config, properties)
 
-    val tableName = TableServiceUtil.getTableNameFromConfig(config)
-    val schema = TableServiceUtil
+    val tableName = TableCacheUtil.getTableNameFromConfig(config)
+    val schema = TableCacheUtil
       .readSchemaFromConfig(config, classOf[IntermediateResultTableFactory].getClassLoader)
 
     new IntermediateResultTableSource(

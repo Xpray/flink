@@ -19,70 +19,35 @@
 package org.apache.flink.table.interactive.util;
 
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
-import org.apache.flink.service.ServiceDescriptor;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.descriptors.SchemaValidator;
 import org.apache.flink.table.interactive.FlinkTableServiceFactoryDescriptor;
-import org.apache.flink.table.interactive.TableServiceFactory;
+import org.apache.flink.table.interactive.IntermediateResultTableFactory;
 import org.apache.flink.util.InstantiationUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.util.hashing.MurmurHash3;
 
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_CLASS_NAME;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_CLIENT_READ_BUFFER_SIZE;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_CLIENT_WRITE_BUFFER_SIZE;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_CPU_CORES;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_DIRECT_MEMORY_MB;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_HEAP_MEMORY_MB;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_NATIVE_MEMORY_MB;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_PARALLELISM;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_READY_RETRY_BACKOFF_MS;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_READY_RETRY_TIMES;
-import static org.apache.flink.table.interactive.TableServiceOptions.TABLE_SERVICE_STORAGE_ROOT_PATH;
 
 /**
  * Helper class for TableService.
  */
-public final class TableServiceUtil {
+public final class TableCacheUtil {
 
-	private static final Logger LOG = LoggerFactory.getLogger(TableServiceUtil.class);
+	private static final Logger LOG = LoggerFactory.getLogger(TableCacheUtil.class);
 
 	private static final String TABLE_NAME = "_table_name_";
 
-	private TableServiceUtil() {}
+	private TableCacheUtil() {}
 
 	public static FlinkTableServiceFactoryDescriptor getDefaultTableServiceFactoryDescriptor(){
 		return new FlinkTableServiceFactoryDescriptor(
-			new TableServiceFactory(), new Configuration());
-	}
-
-	public static void shutdownAndAwaitTermination(ExecutorService pool, long waitTimeInSeconds) {
-		pool.shutdown(); // Disable new tasks from being submitted
-		try {
-			// Wait a while for existing tasks to terminate
-			if (!pool.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS)) {
-				pool.shutdownNow(); // Cancel currently executing tasks
-				// Wait a while for tasks to respond to being cancelled
-				if (!pool.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS)) {
-					LOG.error("Pool did not terminate");
-				}
-			}
-		} catch (InterruptedException ie) {
-			// (Re-)Cancel if current thread also interrupted
-			pool.shutdownNow();
-			// Preserve interrupt status
-			Thread.currentThread().interrupt();
-		}
+			new IntermediateResultTableFactory(), new Configuration());
 	}
 
 	public static String getTableNameFromConfig(Configuration configuration) {

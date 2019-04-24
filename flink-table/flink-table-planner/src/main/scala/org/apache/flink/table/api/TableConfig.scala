@@ -21,10 +21,9 @@ import _root_.java.util.TimeZone
 import _root_.java.math.MathContext
 
 import org.apache.flink.configuration.{Configuration, GlobalConfiguration}
-import org.apache.flink.service.ServiceDescriptor
 import org.apache.flink.table.calcite.CalciteConfig
 import org.apache.flink.table.interactive.FlinkTableServiceFactoryDescriptor
-import org.apache.flink.table.interactive.util.TableServiceUtil
+import org.apache.flink.table.interactive.util.TableCacheUtil
 
 /**
  * A config to define the runtime behavior of the Table API.
@@ -158,8 +157,8 @@ class TableConfig {
   /**
     * Defines the FlinkTableServiceFactoryDescriptor for TableService.
     */
-  private var tableServiceFactoryDescriptor: FlinkTableServiceFactoryDescriptor = {
-    val desc = TableServiceUtil.getDefaultTableServiceFactoryDescriptor
+  private var tableCacheFactoryDescriptor: FlinkTableServiceFactoryDescriptor = {
+    val desc = TableCacheUtil.getDefaultTableServiceFactoryDescriptor
     desc.getConfiguration.addAll(getConf)
     desc
   }

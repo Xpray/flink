@@ -77,16 +77,6 @@ public abstract class PlanNode implements Visitable<PlanNode>, DumpableNode<Plan
 	
 	private boolean pFlag;							// flag for the internal pruning algorithm
 
-	private String digest;
-
-	public String getDigest() {
-		return digest;
-	}
-
-	public void setDigest(String digest) {
-		this.digest = digest;
-	}
-
 	// --------------------------------------------------------------------------------------------
 	
 	public PlanNode(OptimizerNode template, String nodeName, DriverStrategy strategy) {

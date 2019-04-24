@@ -16,29 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.flink.service;
+package org.apache.flink.table.interactive;
 
-import java.io.Serializable;
+import org.apache.flink.runtime.execution.SuppressRestartsException;
 
 /**
- * This is the base class for user defined Flink Service.
+ * IntermediateResultAccessException describes an RuntimeException IntermediateResult access failure.
+ * This Exception indicates the cache is unavailable.
  */
-public abstract class UserDefinedService implements LifeCycleAware, Serializable {
+public class IntermediateResultAccessException extends SuppressRestartsException {
 
-	private ServiceContext serviceContext;
-
-	public final ServiceContext getServiceContext() {
-		return serviceContext;
+	public IntermediateResultAccessException(Throwable cause) {
+		super(cause);
 	}
-
-	public final void setServiceContext(ServiceContext serviceContext) {
-		this.serviceContext = serviceContext;
-	}
-
-	/**
-	 * This method will be invoked after {@link LifeCycleAware}'s open method.
-	 * {@link LifeCycleAware}'s close method will be invoked when returned from this method.
-	 */
-	public abstract void start();
-
 }
