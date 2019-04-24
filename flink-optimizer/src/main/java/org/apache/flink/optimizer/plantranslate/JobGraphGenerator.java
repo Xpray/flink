@@ -75,7 +75,7 @@ import org.apache.flink.runtime.operators.CoGroupWithSolutionSetSecondDriver;
 import org.apache.flink.runtime.operators.DataSinkTask;
 import org.apache.flink.runtime.operators.DataSourceTask;
 import org.apache.flink.runtime.operators.DriverStrategy;
-import org.apache.flink.runtime.operators.IntermediateResultSourceTask;
+import org.apache.flink.runtime.operators.IntermediateResultDataSourceTask;
 import org.apache.flink.runtime.operators.JoinDriver;
 import org.apache.flink.runtime.operators.JoinWithSolutionSetFirstDriver;
 import org.apache.flink.runtime.operators.JoinWithSolutionSetSecondDriver;
@@ -952,7 +952,7 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 			UUID uuid = node.getDataSourceNode().getOperator().getUuid();
 			vertex.setIntermediateDataSetID(new IntermediateDataSetID(uuid));
 			vertex.setResultLocations(node.getDataSourceNode().getOperator().getResultLocations());
-			invokableClass = IntermediateResultSourceTask.class;
+			invokableClass = IntermediateResultDataSourceTask.class;
 			config.setResultLocations(node.getDataSourceNode().getOperator().getResultLocations());
 		}
 

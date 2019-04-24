@@ -22,7 +22,7 @@ import _root_.java.math.MathContext
 
 import org.apache.flink.configuration.{Configuration, GlobalConfiguration}
 import org.apache.flink.table.calcite.CalciteConfig
-import org.apache.flink.table.interactive.FlinkTableServiceFactoryDescriptor
+import org.apache.flink.table.interactive.IntermediateResultCacheFactoryDescriptor
 import org.apache.flink.table.interactive.util.TableCacheUtil
 
 /**
@@ -154,20 +154,17 @@ class TableConfig {
     this.maxGeneratedCodeLength = maxGeneratedCodeLength
   }
 
-  /**
-    * Defines the FlinkTableServiceFactoryDescriptor for TableService.
-    */
-  private var tableCacheFactoryDescriptor: FlinkTableServiceFactoryDescriptor = {
+  private var tableCacheFactoryDescriptor: IntermediateResultCacheFactoryDescriptor = {
     val desc = TableCacheUtil.getDefaultTableServiceFactoryDescriptor
     desc.getConfiguration.addAll(getConf)
     desc
   }
 
-  def getTableServiceFactoryDescriptor(): FlinkTableServiceFactoryDescriptor =
-    tableServiceFactoryDescriptor
+  def getTableServiceFactoryDescriptor(): IntermediateResultCacheFactoryDescriptor =
+    tableCacheFactoryDescriptor
 
-  def setTableServiceFactoryDescriptor(descriptor: FlinkTableServiceFactoryDescriptor): Unit = {
-    tableServiceFactoryDescriptor = descriptor
+  def setTableServiceFactoryDescriptor(descriptor: IntermediateResultCacheFactoryDescriptor): Unit = {
+    tableCacheFactoryDescriptor = descriptor
   }
 }
 

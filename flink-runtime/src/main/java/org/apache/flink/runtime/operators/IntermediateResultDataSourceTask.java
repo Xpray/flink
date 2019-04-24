@@ -18,13 +18,25 @@
 
 package org.apache.flink.runtime.operators;
 
+import org.apache.flink.api.java.io.InputGateWrapper;
+import org.apache.flink.api.java.io.IntermediateResultInputFormat;
 import org.apache.flink.runtime.execution.Environment;
 
-public class IntermediateResultSourceTask<OT> extends DataSourceTask<OT> {
+public class IntermediateResultDataSourceTask<OT> extends DataSourceTask<OT> {
 
-	public IntermediateResultSourceTask(Environment environment) {
+	private InputGateWrapper<OT> inputGateWrapper;
+
+	public IntermediateResultDataSourceTask(Environment environment) {
 		super(environment);
 	}
 
+	public void setInputGateWrapper(InputGateWrapper<OT> inputGateWrapper) {
+		this.inputGateWrapper = inputGateWrapper;
+	}
 
+	@Override
+	protected void initInputFormat() {
+		super.initInputFormat();
+		((IntermediateResultInputFormat) format).setInputGateWrapper(inputGateWrapper);
+	}
 }

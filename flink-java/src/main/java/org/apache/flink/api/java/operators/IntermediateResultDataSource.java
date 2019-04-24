@@ -23,6 +23,8 @@ import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.operators.GenericDataSourceBase;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.InputGateWrapper;
+import org.apache.flink.api.java.io.IntermediateResultInputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.AbstractID;
 

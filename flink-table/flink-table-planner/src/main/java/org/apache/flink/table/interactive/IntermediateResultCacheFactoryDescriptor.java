@@ -3,10 +3,7 @@ package org.apache.flink.table.interactive;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.table.factories.TableFactory;
 
-/**
- * Describe a TableFactory for FlinkTableServiceSource and FlinkTableServiceSink.
- */
-public class TableCacheFactoryDescriptor {
+public class IntermediateResultCacheFactoryDescriptor {
 	private TableFactory tableFactory;
 
 	/**
@@ -14,7 +11,7 @@ public class TableCacheFactoryDescriptor {
 	 */
 	private Configuration configuration;
 
-	public TableCacheFactoryDescriptor(TableFactory tableFactory, Configuration configuration) {
+	public IntermediateResultCacheFactoryDescriptor(TableFactory tableFactory, Configuration configuration) {
 		this.tableFactory = tableFactory;
 		this.configuration = configuration;
 	}

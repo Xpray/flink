@@ -96,7 +96,7 @@ class CacheAwarePlanBuilder(tEnv: TableEnvironment) {
       tEnv.tableCacheManager.getTableServiceFactoryProperties()
 
     tableFactory match {
-      case Some(factory: TableServiceFactory) => factory.setTableEnv(tEnv)
+      case Some(factory: IntermediateResultTableFactory) => factory.setTableEnv(tEnv)
       case _ =>
     }
 

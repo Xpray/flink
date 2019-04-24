@@ -68,7 +68,7 @@ public class DataSourceTask<OT> extends AbstractInvokable {
 	private Collector<OT> output;
 
 	// InputFormat instance
-	private InputFormat<OT, InputSplit> format;
+	protected InputFormat<OT, InputSplit> format;
 
 	// type serializer for the input
 	private TypeSerializerFactory<OT> serializerFactory;
@@ -263,7 +263,7 @@ public class DataSourceTask<OT> extends AbstractInvokable {
 	 *         Throws if instance of InputFormat implementation can not be
 	 *         obtained.
 	 */
-	private void initInputFormat() {
+	protected void initInputFormat() {
 		ClassLoader userCodeClassLoader = getUserCodeClassLoader();
 		// obtain task configuration (including stub parameters)
 		Configuration taskConf = getTaskConfiguration();

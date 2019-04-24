@@ -21,7 +21,7 @@ package org.apache.flink.table.interactive.util;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.descriptors.SchemaValidator;
-import org.apache.flink.table.interactive.FlinkTableServiceFactoryDescriptor;
+import org.apache.flink.table.interactive.IntermediateResultCacheFactoryDescriptor;
 import org.apache.flink.table.interactive.IntermediateResultTableFactory;
 import org.apache.flink.util.InstantiationUtil;
 
@@ -31,8 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Helper class for TableService.
@@ -45,8 +43,8 @@ public final class TableCacheUtil {
 
 	private TableCacheUtil() {}
 
-	public static FlinkTableServiceFactoryDescriptor getDefaultTableServiceFactoryDescriptor(){
-		return new FlinkTableServiceFactoryDescriptor(
+	public static IntermediateResultCacheFactoryDescriptor getDefaultTableServiceFactoryDescriptor(){
+		return new IntermediateResultCacheFactoryDescriptor(
 			new IntermediateResultTableFactory(), new Configuration());
 	}
 

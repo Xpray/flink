@@ -64,6 +64,7 @@ import org.apache.flink.runtime.jobgraph.tasks.StoppableTask;
 import org.apache.flink.runtime.jobmanager.PartitionProducerDisposedException;
 import org.apache.flink.runtime.memory.MemoryManager;
 import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
+import org.apache.flink.runtime.operators.IntermediateResultDataSourceTask;
 import org.apache.flink.runtime.query.TaskKvStateRegistry;
 import org.apache.flink.runtime.state.CheckpointListener;
 import org.apache.flink.runtime.state.TaskStateManager;
@@ -706,6 +707,11 @@ public class Task implements Runnable, TaskActions, CheckpointListener {
 
 			// make sure the user code classloader is accessible thread-locally
 			executingThread.setContextClassLoader(userCodeClassLoader);
+
+			if (invokable instanceof IntermediateResultDataSourceTask<?>) {
+				// todo create InputGateWrapper
+				((IntermediateResultDataSourceTask<?>) invokable).setInputGateWrapper(null);
+			}
 
 			// run the invokable
 			invokable.invoke();
