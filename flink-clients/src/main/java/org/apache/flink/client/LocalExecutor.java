@@ -224,7 +224,8 @@ public class LocalExecutor extends PlanExecutor {
 			}
 			finally {
 				if (shutDownAtEnd) {
-					stop();
+					// 先试试不close
+					// stop();
 				}
 			}
 		}

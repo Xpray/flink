@@ -160,9 +160,9 @@ public class OutputFormatVertex extends JobVertex {
 			return super.connectNewDataSetAsInput(input, distPattern, partitionType);
 		}
 		IntermediateDataSet dataSet = input.createAndAddResultDataSet(intermediateDataSetID, partitionType);
-		JobEdge edge = new JobEdge(dataSet, this, distPattern);
-		getInputs().add(edge);
-		dataSet.addConsumer(edge);
-		return edge;
+//		JobEdge edge = new JobEdge(dataSet, this, distPattern);
+//		getInputs().add(edge);
+//		dataSet.addConsumer(edge);
+		return null;
 	}
 }

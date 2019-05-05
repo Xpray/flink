@@ -197,10 +197,10 @@ class SpillableSubpartition extends ResultSubpartition {
 					"been finished.");
 			}
 
-			if (readView != null) {
-				throw new IllegalStateException("Subpartition is being or already has been " +
-					"consumed, but we currently allow subpartitions to only be consumed once.");
-			}
+//			if (readView != null) {
+//				throw new IllegalStateException("Subpartition is being or already has been " +
+//					"consumed, but we currently allow subpartitions to only be consumed once.");
+//			}
 
 			if (spillWriter != null) {
 				readView = new SpilledSubpartitionView(

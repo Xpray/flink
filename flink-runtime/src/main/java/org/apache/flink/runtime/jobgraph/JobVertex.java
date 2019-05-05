@@ -20,7 +20,9 @@ package org.apache.flink.runtime.jobgraph;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.InputDependencyConstraint;
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.api.common.operators.ResourceSpec;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.InputSplitSource;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
@@ -28,6 +30,7 @@ import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.jobgraph.tasks.StoppableTask;
 import org.apache.flink.runtime.jobmanager.scheduler.CoLocationGroup;
 import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.Preconditions;
 
 import java.util.ArrayList;
@@ -115,6 +118,10 @@ public class JobVertex implements java.io.Serializable {
 
 	/** The input dependency constraint to schedule this vertex. */
 	private InputDependencyConstraint inputDependencyConstraint = InputDependencyConstraint.ANY;
+
+	private boolean cachedVertex;
+
+	private List<Tuple2<AbstractID, ResultLocation>> resultLocations;
 
 	// --------------------------------------------------------------------------------------------
 
@@ -574,5 +581,21 @@ public class JobVertex implements java.io.Serializable {
 	@Override
 	public String toString() {
 		return this.name + " (" + this.invokableClassName + ')';
+	}
+
+	public boolean isCachedVertex() {
+		return cachedVertex;
+	}
+
+	public void setCachedVertex(boolean cachedVertex) {
+		this.cachedVertex = cachedVertex;
+	}
+
+	public List<Tuple2<AbstractID, ResultLocation>> getResultLocations() {
+		return resultLocations;
+	}
+
+	public void setResultLocations(List<Tuple2<AbstractID, ResultLocation>> resultLocations) {
+		this.resultLocations = resultLocations;
 	}
 }

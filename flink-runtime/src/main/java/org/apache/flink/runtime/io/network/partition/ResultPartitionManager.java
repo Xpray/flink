@@ -58,7 +58,7 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 			if (previous != null) {
 				throw new IllegalStateException("Result partition already registered.");
 			}
-
+			System.out.println("Registered " + partition);
 			LOG.debug("Registered {}.", partition);
 		}
 	}
@@ -132,19 +132,25 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 		final ResultPartition previous;
 
 		LOG.debug("Received consume notification from {}.", partition);
+		System.out.println("Received consume notification from " + partition);
+		if (partition.getPartitionType() != ResultPartitionType.BLOCKING_PERSISTENT) {
+			synchronized (registeredPartitions) {
+				ResultPartitionID partitionId = partition.getPartitionId();
 
-		synchronized (registeredPartitions) {
-			ResultPartitionID partitionId = partition.getPartitionId();
-
-			previous = registeredPartitions.remove(partitionId.getProducerId(),
+				previous = registeredPartitions.remove(partitionId.getProducerId(),
 					partitionId.getPartitionId());
-		}
+			}
 
-		// Release the partition if it was successfully removed
-		if (partition == previous) {
-			partition.release();
-
-			LOG.debug("Released {}.", partition);
+			// Release the partition if it was successfully removed
+			if (partition == previous) {
+				partition.release();
+				System.out.println("Released " + partition);
+				LOG.debug("Released {}.", partition);
+			}
 		}
+	}
+
+	public ResultPartitionManager() {
+		System.out.println("ResultPartitionManager created");
 	}
 }

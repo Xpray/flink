@@ -61,6 +61,7 @@ import org.apache.flink.runtime.iterative.task.IterationSynchronizationSinkTask;
 import org.apache.flink.runtime.iterative.task.IterationTailTask;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.InputFormatVertex;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSet;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -250,6 +251,10 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 
 		// add vertices to the graph
 		for (JobVertex vertex : this.vertices.values()) {
+			// skip cache vertex
+			if (vertex instanceof OutputFormatVertex && ((OutputFormatVertex) vertex).isCached()) {
+				continue;
+			}
 			vertex.setInputDependencyConstraint(program.getOriginalPlan().getExecutionConfig().getDefaultInputDependencyConstraint());
 			graph.addVertex(vertex);
 		}
@@ -331,7 +336,12 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 				vertex = createDataSinkVertex((SinkPlanNode) node);
 			}
 			else if (node instanceof SourcePlanNode) {
-				vertex = createDataSourceVertex((SourcePlanNode) node);
+				SourcePlanNode sourcePlanNode = (SourcePlanNode) node;
+				if (sourcePlanNode.getDataSourceNode().getOperator().isCachedSource()) {
+					vertex = createIntermediateResultVertex(sourcePlanNode);
+				} else {
+					vertex = createDataSourceVertex(sourcePlanNode);
+				}
 			}
 			else if (node instanceof BulkIterationPlanNode) {
 				BulkIterationPlanNode iterationNode = (BulkIterationPlanNode) node;
@@ -967,6 +977,32 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		return vertex;
 	}
 
+	private JobVertex createIntermediateResultVertex(SourcePlanNode node) throws CompilerException {
+		JobVertex vertex = new JobVertex(node.getNodeName());
+		final TaskConfig config = new TaskConfig(vertex.getConfiguration());
+		vertex.setResources(node.getMinResources(), node.getPreferredResources());
+		vertex.setInvokableClass(BatchTask.class);
+
+		// set user code
+		config.setStubWrapper(node.getProgramOperator().getUserCodeWrapper());
+		config.setStubParameters(node.getProgramOperator().getParameters());
+		config.setOutputSerializer(node.getSerializer());
+		config.setInputSerializer(node.getSerializer(), 0);
+
+		final DriverStrategy ds = node.getDriverStrategy();
+		// set the driver strategy
+		config.setDriverStrategy(DriverStrategy.UNARY_NO_OP);
+		config.setDriver(DriverStrategy.UNARY_NO_OP.getDriverClass());
+		config.addInputToGroup(0);
+		UUID uuid = node.getDataSourceNode().getOperator().getUuid();
+		IntermediateDataSetID intermediateDataSetID = new IntermediateDataSetID(uuid);
+		JobEdge jobEdge = new JobEdge(intermediateDataSetID, vertex, DistributionPattern.POINTWISE);
+		vertex.getInputs().add(jobEdge);
+		vertex.setCachedVertex(true);
+		vertex.setResultLocations(node.getDataSourceNode().getOperator().getResultLocations());
+		return vertex;
+	}
+
 	private JobVertex createDataSinkVertex(SinkPlanNode node) throws CompilerException {
 		final OutputFormatVertex vertex = new OutputFormatVertex(node.getNodeName());
 		final TaskConfig config = new TaskConfig(vertex.getConfiguration());
@@ -1270,9 +1306,11 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		
 		String caching = channel.getTempMode() == TempMode.NONE ? null : channel.getTempMode().toString();
 
-		edge.setShipStrategyName(shipStrategy);
-		edge.setPreProcessingOperationName(localStrategy);
-		edge.setOperatorLevelCachingDescription(caching);
+		if (edge != null) {
+			edge.setShipStrategyName(shipStrategy);
+			edge.setPreProcessingOperationName(localStrategy);
+			edge.setOperatorLevelCachingDescription(caching);
+		}
 		
 		return distributionPattern;
 	}

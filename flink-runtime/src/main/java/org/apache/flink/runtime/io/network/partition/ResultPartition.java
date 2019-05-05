@@ -339,7 +339,7 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 		int refCnt = pendingReferences.get();
 
 		checkState(refCnt != -1, "Partition released.");
-		checkState(refCnt > 0, "Partition not pinned.");
+		checkState(refCnt >= 0, "Partition not pinned.");
 
 		checkElementIndex(index, subpartitions.length, "Subpartition not found.");
 

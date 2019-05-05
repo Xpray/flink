@@ -21,6 +21,7 @@ package org.apache.flink.table.api
 import org.apache.calcite.rel.RelNode
 import org.apache.flink.table.expressions.Expression
 import org.apache.flink.table.functions.TemporalTableFunction
+import org.apache.flink.types.Row
 
 /**
   * The implementation of the [[Table]].
@@ -167,4 +168,6 @@ class TableImpl(val tableEnv: TableEnvironment, relNode: RelNode) extends Table 
   override def cache(): Unit = ???
 
   override def invalidateCache(): Unit = ???
+
+  override def collect(): Array[Row] = ???
 }

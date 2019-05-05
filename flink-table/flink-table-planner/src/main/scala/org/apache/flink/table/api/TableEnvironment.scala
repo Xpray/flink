@@ -115,7 +115,7 @@ abstract class TableEnvironment(val config: TableConfig) {
   private[flink] val expressionBridge: ExpressionBridge[PlannerExpression] =
     new ExpressionBridge[PlannerExpression](functionCatalog, PlannerExpressionConverter.INSTANCE)
 
-  // a manager for table service
+  // a manager for table cache
   private[flink] val tableCacheManager: TableCacheManager =
     new TableCacheManager(this)
 

@@ -53,6 +53,7 @@ import org.apache.flink.runtime.executiongraph.restart.ExecutionGraphRestartCall
 import org.apache.flink.runtime.executiongraph.restart.RestartCallback;
 import org.apache.flink.runtime.executiongraph.restart.RestartStrategy;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
+import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
@@ -804,9 +805,11 @@ public class ExecutionGraph implements AccessExecutionGraph {
 
 		for (ExecutionVertex executionVertex : getAllExecutionVertices()) {
 			for (IntermediateResultPartition intermediateResultPartition : executionVertex.getProducedPartitions().values()) {
-				addLocation(
-					resultLocationTracker,
-					intermediateResultPartition);
+				if (intermediateResultPartition.getIntermediateResult().getResultType() == ResultPartitionType.BLOCKING_PERSISTENT) {
+					addLocation(
+						resultLocationTracker,
+						intermediateResultPartition);
+				}
 			}
 		}
 
@@ -885,7 +888,9 @@ public class ExecutionGraph implements AccessExecutionGraph {
 				globalModVersion,
 				createTimestamp);
 
-			ejv.connectToPredecessors(this.intermediateResults);
+			if (!jobVertex.isCachedVertex()) {
+				ejv.connectToPredecessors(this.intermediateResults);
+			}
 
 			ExecutionJobVertex previousTask = this.tasks.putIfAbsent(jobVertex.getID(), ejv);
 			if (previousTask != null) {
@@ -938,6 +943,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 				schedulingFuture = newSchedulingFuture;
 				newSchedulingFuture.whenComplete(
 					(Void ignored, Throwable throwable) -> {
+						System.out.println("Job finished");
 						if (throwable != null && !(throwable instanceof CancellationException)) {
 							// only fail if the scheduling future was not canceled
 							failGlobal(ExceptionUtils.stripCompletionException(throwable));
@@ -957,7 +963,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 		final ArrayList<CompletableFuture<Void>> schedulingFutures = new ArrayList<>(numVerticesTotal);
 		// simply take the vertices without inputs.
 		for (ExecutionJobVertex ejv : verticesInCreationOrder) {
-			if (ejv.getJobVertex().isInputVertex()) {
+			if (ejv.getJobVertex().isInputVertex() || ejv.getJobVertex().isCachedVertex()) {
 				final CompletableFuture<Void> schedulingJobVertexFuture = ejv.scheduleAll(
 					slotProvider,
 					allowQueuedScheduling,

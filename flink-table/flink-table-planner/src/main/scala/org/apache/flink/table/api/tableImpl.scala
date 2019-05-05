@@ -20,14 +20,13 @@ package org.apache.flink.table.api
 import org.apache.calcite.rel.RelNode
 import org.apache.flink.api.java.operators.join.JoinType
 import org.apache.flink.table.calcite.FlinkRelBuilder
-import org.apache.flink.table.expressions.{Alias, Asc, Expression, ExpressionBridge,
-  ExpressionParser, Ordering, PlannerExpression, ResolvedFieldReference, UnresolvedAlias,
-  WindowProperty}
+import org.apache.flink.table.expressions.{Alias, Asc, Expression, ExpressionBridge, ExpressionParser, Ordering, PlannerExpression, ResolvedFieldReference, UnresolvedAlias, WindowProperty}
 import org.apache.flink.table.functions.{TemporalTableFunction, TemporalTableFunctionImpl}
 import org.apache.flink.table.functions.utils.UserDefinedFunctionUtils
 import org.apache.flink.table.plan.ProjectionTranslator._
 import org.apache.flink.table.plan.logical.{Minus, _}
 import org.apache.flink.table.util.JavaScalaConversionUtil
+import org.apache.flink.types.Row
 
 import _root_.scala.collection.JavaConversions._
 
@@ -441,12 +440,7 @@ class TableImpl(
   }
 
   override def cache(): Unit = {
-    // check if it has been already cached.
-    (tableEnv.tableCacheManager.getToBeCachedTableName(logicalPlan) orElse
-      tableEnv.tableCacheManager.getToBeCachedTableName(logicalPlan)) match {
-      case None => tableEnv.tableCacheManager.cacheTable(this)
-      case Some(_) =>
-    }
+    tableEnv.tableCacheManager.cacheTable(this)
   }
 
   override def invalidateCache(): Unit =

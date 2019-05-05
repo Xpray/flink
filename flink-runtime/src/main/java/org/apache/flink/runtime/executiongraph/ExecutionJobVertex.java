@@ -447,8 +447,9 @@ public class ExecutionJobVertex implements AccessExecutionJobVertex, Archiveable
 			// in which this method is called for the job vertices is not a topological order
 			IntermediateResult ires = intermediateDataSets.get(edge.getSourceId());
 			if (ires == null) {
-				throw new JobException("Cannot connect this job graph to the previous graph. No previous intermediate result found for ID "
-						+ edge.getSourceId());
+//				throw new JobException("Cannot connect this job graph to the previous graph. No previous intermediate result found for ID "
+//						+ edge.getSourceId());
+				System.out.println("This indicates a CachedSource");
 			}
 
 			this.inputs.add(ires);

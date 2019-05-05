@@ -22,18 +22,23 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.Archiveable;
 import org.apache.flink.api.common.InputDependencyConstraint;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.ResultLocation;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
 import org.apache.flink.runtime.checkpoint.JobManagerTaskRestore;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
+import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.deployment.InputChannelDeploymentDescriptor;
 import org.apache.flink.runtime.deployment.InputGateDeploymentDescriptor;
 import org.apache.flink.runtime.deployment.PartialInputChannelDeploymentDescriptor;
 import org.apache.flink.runtime.deployment.ResultPartitionDeploymentDescriptor;
+import org.apache.flink.runtime.deployment.ResultPartitionLocation;
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptor;
 import org.apache.flink.runtime.execution.ExecutionState;
+import org.apache.flink.runtime.io.network.ConnectionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
@@ -50,6 +55,7 @@ import org.apache.flink.runtime.state.KeyGroupRangeAssignment;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.runtime.util.EvictingBoundedList;
 import org.apache.flink.types.Either;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
@@ -60,6 +66,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -836,24 +843,65 @@ public class ExecutionVertex implements AccessExecutionVertex, Archiveable<Archi
 			}
 		}
 
-		for (ExecutionEdge[] edges : inputEdges) {
-			InputChannelDeploymentDescriptor[] partitions = InputChannelDeploymentDescriptor.fromEdges(
-				edges,
-				targetSlot.getTaskManagerLocation().getResourceID(),
-				lazyScheduling);
+		if (jobVertex.getJobVertex().isCachedVertex()) {
+			List<Tuple2<AbstractID, ResultLocation>> locations = jobVertex.getJobVertex().getResultLocations();
+			List<InputChannelDeploymentDescriptor> channelDeploymentDescriptors = new ArrayList<>();
+			int startIndex = getParallelSubtaskIndex();
+			int allTaskNums = getTotalNumberOfParallelSubtasks();
+			while(startIndex < locations.size()) {
+				Tuple2<AbstractID, ResultLocation> info = locations.get(startIndex);
+				ResultPartitionID resultPartitionID = new ResultPartitionID(
+					new IntermediateResultPartitionID(info.f0.getLowerPart(), info.f0.getUpperPart()),
+					new ExecutionAttemptID(info.f1.getProducerId().getLowerPart(), info.f1.getProducerId().getUpperPart())
+				);
+				final ResultPartitionLocation resultPartitionLocation;
+				if (info.f1.getDataPort() == -1) {
+					resultPartitionLocation = ResultPartitionLocation.createLocal();
+				} else {
+					resultPartitionLocation = ResultPartitionLocation.createRemote(
+						new ConnectionID(
+							new TaskManagerLocation(
+								new ResourceID("cache"),
+								info.f1.getAddress(),
+								info.f1.getDataPort()),
+							0
+						)
+					);
+				}
+				InputChannelDeploymentDescriptor deploymentDescriptor = new InputChannelDeploymentDescriptor(
+					resultPartitionID,
+					resultPartitionLocation
+				);
+				channelDeploymentDescriptors.add(deploymentDescriptor);
+				startIndex += allTaskNums;
+			}
+			consumedPartitions.add(
+				new InputGateDeploymentDescriptor(
+					jobVertex.getJobVertex().getInputs().get(0).getSourceId(),
+					ResultPartitionType.BLOCKING_PERSISTENT,
+					0,
+					channelDeploymentDescriptors.toArray(new InputChannelDeploymentDescriptor[0]))
+			);
+		} else {
+			for (ExecutionEdge[] edges : inputEdges) {
+				InputChannelDeploymentDescriptor[] partitions = InputChannelDeploymentDescriptor.fromEdges(
+					edges,
+					targetSlot.getTaskManagerLocation().getResourceID(),
+					lazyScheduling);
 
-			// If the produced partition has multiple consumers registered, we
-			// need to request the one matching our sub task index.
-			// TODO Refactor after removing the consumers from the intermediate result partitions
-			int numConsumerEdges = edges[0].getSource().getConsumers().get(0).size();
+				// If the produced partition has multiple consumers registered, we
+				// need to request the one matching our sub task index.
+				// TODO Refactor after removing the consumers from the intermediate result partitions
+				int numConsumerEdges = edges[0].getSource().getConsumers().get(0).size();
 
-			int queueToRequest = subTaskIndex % numConsumerEdges;
+				int queueToRequest = subTaskIndex % numConsumerEdges;
 
-			IntermediateResult consumedIntermediateResult = edges[0].getSource().getIntermediateResult();
-			final IntermediateDataSetID resultId = consumedIntermediateResult.getId();
-			final ResultPartitionType partitionType = consumedIntermediateResult.getResultType();
+				IntermediateResult consumedIntermediateResult = edges[0].getSource().getIntermediateResult();
+				final IntermediateDataSetID resultId = consumedIntermediateResult.getId();
+				final ResultPartitionType partitionType = consumedIntermediateResult.getResultType();
 
-			consumedPartitions.add(new InputGateDeploymentDescriptor(resultId, partitionType, queueToRequest, partitions));
+				consumedPartitions.add(new InputGateDeploymentDescriptor(resultId, partitionType, queueToRequest, partitions));
+			}
 		}
 
 		final Either<SerializedValue<JobInformation>, PermanentBlobKey> jobInformationOrBlobKey = getExecutionGraph().getJobInformationOrBlobKey();

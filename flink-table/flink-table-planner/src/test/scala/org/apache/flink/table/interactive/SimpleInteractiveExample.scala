@@ -26,6 +26,7 @@ import org.apache.flink.table.api.scala.BatchTableEnvironment
 object SimpleInteractiveExample extends App {
 
   val env = ExecutionEnvironment.getExecutionEnvironment
+  env.setParallelism(1)
   val tEnv = BatchTableEnvironment.create(env)
 
   val data = Seq(
@@ -52,9 +53,9 @@ object SimpleInteractiveExample extends App {
     val res2 = t2.collect()
     res2.foreach(println)
 
-    val t3 = t1.groupBy('color).select('color, 'count.avg as 'avg)
-    val res3 = t3.collect()
-    res3.foreach(println)
+//    val t3 = t1.groupBy('color).select('color, 'count.avg as 'avg)
+//    val res3 = t3.collect()
+//    res3.foreach(println)
   } catch {
     case e: Throwable =>
       println(s"Caught unexpected exception: $e")

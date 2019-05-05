@@ -442,6 +442,7 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 			deploymentFuture.whenComplete(
 				(Void ignored, Throwable failure) -> {
 					if (failure != null) {
+						System.out.println("Job errors: " + failure.toString());
 						final Throwable stripCompletionException = ExceptionUtils.stripCompletionException(failure);
 						final Throwable schedulingFailureCause;
 

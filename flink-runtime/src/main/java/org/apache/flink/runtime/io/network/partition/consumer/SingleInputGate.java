@@ -203,7 +203,8 @@ public class SingleInputGate implements InputGate {
 		checkArgument(consumedSubpartitionIndex >= 0);
 		this.consumedSubpartitionIndex = consumedSubpartitionIndex;
 
-		checkArgument(numberOfInputChannels > 0);
+		// this input gate may be empty
+		checkArgument(numberOfInputChannels >= 0);
 		this.numberOfInputChannels = numberOfInputChannels;
 
 		this.inputChannels = new HashMap<>(numberOfInputChannels);

@@ -23,6 +23,7 @@ import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.functions.TemporalTableFunction;
 import org.apache.flink.table.sinks.TableSink;
+import org.apache.flink.types.Row;
 
 /**
  * A Table is the core component of the Table API.
@@ -927,4 +928,5 @@ public interface Table {
 	 * @note After invalidated, the cache may be re-created if this table is used again.
 	 */
 	void invalidateCache();
+
 }

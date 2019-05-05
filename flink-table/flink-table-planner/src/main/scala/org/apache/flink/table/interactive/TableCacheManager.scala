@@ -64,8 +64,14 @@ class TableCacheManager(tEnv: TableEnvironment) {
   }
 
   def cacheTable(table: Table): Unit = {
-    val name = java.util.UUID.randomUUID().toString
-    cacheTable(table, name)
+    val plan = table match {
+      case tableImpl: TableImpl => tableImpl.logicalPlan
+      case _ => throw new RuntimeException("Table do not support Cache().")
+    }
+    if (!toBeCachedTables.containsKey(plan)) {
+      val name = java.util.UUID.randomUUID().toString
+      cacheTable(table, name)
+    }
   }
 
   private[flink] def getToBeCachedTableName(logicalPlan: LogicalNode): Option[String] = {
