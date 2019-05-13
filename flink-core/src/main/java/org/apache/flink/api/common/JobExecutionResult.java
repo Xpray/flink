@@ -20,6 +20,7 @@ package org.apache.flink.api.common;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.OptionalFailure;
 
 import java.util.Collections;
@@ -39,6 +40,12 @@ public class JobExecutionResult extends JobSubmissionResult {
 	private final Map<String, OptionalFailure<Object>> accumulatorResults;
 
 	/**
+	 * IntermediateDataSetID -> Map(ResultPartitionID -> ResultPartitionDescriptor).
+	 * Only BLOCKING_PERSISTENT ResultPartitions are kept for now.
+	 */
+	private final Map<AbstractID, Map<AbstractID, ResultPartitionDescriptor>> resultPartitionDescriptors;
+
+	/**
 	 * Creates a new JobExecutionResult.
 	 *
 	 * @param jobID The job's ID.
@@ -46,6 +53,19 @@ public class JobExecutionResult extends JobSubmissionResult {
 	 * @param accumulators A map of all accumulators produced by the job.
 	 */
 	public JobExecutionResult(JobID jobID, long netRuntime, Map<String, OptionalFailure<Object>> accumulators) {
+		this(jobID, netRuntime, accumulators, null);
+	}
+
+	/**
+	 * Creates a new JobExecutionResult.
+	 *
+	 * @param jobID The job's ID.
+	 * @param netRuntime The net runtime of the job (excluding pre-flight phase like the optimizer) in milliseconds
+	 * @param accumulators A map of all accumulators produced by the job.
+	 * @param resultPartitionDescriptors A map of all resultPartitionDescriptors produced by the job.
+	 */
+	public JobExecutionResult(JobID jobID, long netRuntime, Map<String, OptionalFailure<Object>> accumulators,
+							  Map<AbstractID, Map<AbstractID, ResultPartitionDescriptor>> resultPartitionDescriptors) {
 		super(jobID);
 		this.netRuntime = netRuntime;
 
@@ -53,6 +73,12 @@ public class JobExecutionResult extends JobSubmissionResult {
 			this.accumulatorResults = accumulators;
 		} else {
 			this.accumulatorResults = Collections.emptyMap();
+		}
+
+		if (resultPartitionDescriptors != null) {
+			this.resultPartitionDescriptors = resultPartitionDescriptors;
+		} else {
+			this.resultPartitionDescriptors = Collections.emptyMap();
 		}
 	}
 
@@ -122,6 +148,10 @@ public class JobExecutionResult extends JobSubmissionResult {
 							+ "' should be Integer but has type " + result.getClass());
 		}
 		return (Integer) result;
+	}
+
+	public Map<AbstractID, Map<AbstractID, ResultPartitionDescriptor>> getResultPartitionDescriptors() {
+		return Collections.unmodifiableMap(resultPartitionDescriptors);
 	}
 
 	/**

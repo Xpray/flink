@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ArchivedExecutionConfig;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.ResultPartitionDescriptor;
 import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.flink.api.common.accumulators.AccumulatorHelper;
 import org.apache.flink.api.common.time.Time;
@@ -52,7 +53,9 @@ import org.apache.flink.runtime.executiongraph.restart.ExecutionGraphRestartCall
 import org.apache.flink.runtime.executiongraph.restart.RestartCallback;
 import org.apache.flink.runtime.executiongraph.restart.RestartStrategy;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
+import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -67,7 +70,9 @@ import org.apache.flink.runtime.query.KvStateLocationRegistry;
 import org.apache.flink.runtime.state.SharedStateRegistry;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.taskmanager.TaskExecutionState;
+import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.types.Either;
+import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OptionalFailure;
@@ -102,6 +107,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -805,6 +811,52 @@ public class ExecutionGraph implements AccessExecutionGraph {
 			.collect(Collectors.toMap(
 				Map.Entry::getKey,
 				entry -> serializeAccumulator(entry.getKey(), entry.getValue())));
+	}
+
+	public void addLocation(
+		Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultPartitionDescriptor>> resultPartitionDescriptors,
+		IntermediateResultPartition intermediateResultPartition) {
+
+		IntermediateDataSetID dataSetID = intermediateResultPartition.getIntermediateResult().getId();
+
+		Map<IntermediateResultPartitionID, ResultPartitionDescriptor> map = resultPartitionDescriptors.computeIfAbsent(
+			dataSetID, key -> new HashMap<>()
+		);
+
+
+		TaskManagerLocation taskManagerLocation = null;
+		try {
+			taskManagerLocation = intermediateResultPartition
+				.getProducer().getCurrentExecutionAttempt().getTaskManagerLocationFuture().get(1, TimeUnit.SECONDS);
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			LOG.error(e.getMessage(), e);
+			// ignore exceptions
+		}
+
+		if (taskManagerLocation != null) {
+			AbstractID producerId = intermediateResultPartition.getProducer().getCurrentExecutionAttempt().getAttemptId();
+			ResultPartitionDescriptor resultPartitionDescriptor = new ResultPartitionDescriptor(
+				taskManagerLocation.address(),
+				taskManagerLocation.dataPort(),
+				producerId);
+			map.put(intermediateResultPartition.getPartitionId(), resultPartitionDescriptor);
+		}
+	}
+
+	@Override
+	public Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultPartitionDescriptor>> getResultPartitionDescriptors() {
+
+		Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultPartitionDescriptor>> resultPartitionDescriptors = new HashMap<>();
+
+		for (ExecutionVertex executionVertex : getAllExecutionVertices()) {
+			for (IntermediateResultPartition intermediateResultPartition : executionVertex.getProducedPartitions().values()) {
+				if (intermediateResultPartition.getResultType() == ResultPartitionType.BLOCKING_PERSISTENT) {
+					addLocation(resultPartitionDescriptors, intermediateResultPartition);
+				}
+			}
+		}
+
+		return resultPartitionDescriptors;
 	}
 
 	private static SerializedValue<OptionalFailure<Object>> serializeAccumulator(String name, OptionalFailure<Accumulator<?, ?>> accumulator) {

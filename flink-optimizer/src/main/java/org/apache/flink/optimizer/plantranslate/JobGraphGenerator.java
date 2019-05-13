@@ -61,6 +61,7 @@ import org.apache.flink.runtime.iterative.task.IterationSynchronizationSinkTask;
 import org.apache.flink.runtime.iterative.task.IterationTailTask;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.InputFormatVertex;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
@@ -100,6 +101,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -246,6 +248,10 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 
 		// add vertices to the graph
 		for (JobVertex vertex : this.vertices.values()) {
+			// skip vertex of placeholder
+			if (vertex instanceof OutputFormatVertex && ((OutputFormatVertex) vertex).isPlaceHolderForCache()) {
+				continue;
+			}
 			vertex.setInputDependencyConstraint(program.getOriginalPlan().getExecutionConfig().getDefaultInputDependencyConstraint());
 			graph.addVertex(vertex);
 		}
@@ -959,6 +965,12 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		final TaskConfig config = new TaskConfig(vertex.getConfiguration());
 
 		vertex.setResources(node.getMinResources(), node.getPreferredResources());
+
+		// set intermediateDataSetID if necessary
+		UUID intermediateDataSetID = node.getSinkNode().getOperator().getIntermediateDataSetID();
+		if (intermediateDataSetID != null) {
+			vertex.setIntermediateDataSetID(new IntermediateDataSetID(intermediateDataSetID));
+		}
 		vertex.setInvokableClass(DataSinkTask.class);
 		vertex.setFormatDescription(getDescriptionForUserCode(node.getProgramOperator().getUserCodeWrapper()));
 		
@@ -1249,9 +1261,12 @@ public class JobGraphGenerator implements Visitor<PlanNode> {
 		
 		String caching = channel.getTempMode() == TempMode.NONE ? null : channel.getTempMode().toString();
 
-		edge.setShipStrategyName(shipStrategy);
-		edge.setPreProcessingOperationName(localStrategy);
-		edge.setOperatorLevelCachingDescription(caching);
+		// edge is null if ResultPartition is BLOCKING_PERSISTENT.
+		if (edge != null) {
+			edge.setShipStrategyName(shipStrategy);
+			edge.setPreProcessingOperationName(localStrategy);
+			edge.setOperatorLevelCachingDescription(caching);
+		}
 		
 		return distributionPattern;
 	}

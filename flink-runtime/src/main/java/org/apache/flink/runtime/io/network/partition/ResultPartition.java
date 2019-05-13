@@ -150,6 +150,8 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 		// Create the subpartitions.
 		switch (partitionType) {
 			case BLOCKING:
+			// todo BLOCKING_PERSISTENT shall use a long life cycle SubPartition
+			case BLOCKING_PERSISTENT:
 				for (int i = 0; i < subpartitions.length; i++) {
 					subpartitions[i] = new SpillableSubpartition(i, this, ioManager);
 				}

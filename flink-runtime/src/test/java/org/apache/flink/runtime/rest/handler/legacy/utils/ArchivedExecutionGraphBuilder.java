@@ -20,10 +20,13 @@ package org.apache.flink.runtime.rest.handler.legacy.utils;
 
 import org.apache.flink.api.common.ArchivedExecutionConfig;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.ResultPartitionDescriptor;
 import org.apache.flink.runtime.accumulators.StringifiedAccumulatorResult;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ErrorInfo;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.util.OptionalFailure;
@@ -55,6 +58,7 @@ public class ArchivedExecutionGraphBuilder {
 	private ArchivedExecutionConfig archivedExecutionConfig;
 	private boolean isStoppable;
 	private Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators;
+	private Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultPartitionDescriptor>> resultPartitionDescriptors;
 
 	public ArchivedExecutionGraphBuilder setJobID(JobID jobID) {
 		this.jobID = jobID;
@@ -117,6 +121,11 @@ public class ArchivedExecutionGraphBuilder {
 		return this;
 	}
 
+	public ArchivedExecutionGraphBuilder setResultPartitionDescriptors(Map<IntermediateDataSetID, Map<IntermediateResultPartitionID, ResultPartitionDescriptor>> resultPartitionDescriptors) {
+		this.resultPartitionDescriptors = resultPartitionDescriptors;
+		return this;
+	}
+
 	public ArchivedExecutionGraph build() {
 		JobID jobID = this.jobID != null ? this.jobID : new JobID();
 		String jobName = this.jobName != null ? this.jobName : "job_" + RANDOM.nextInt();
@@ -136,6 +145,7 @@ public class ArchivedExecutionGraphBuilder {
 			jsonPlan != null ? jsonPlan : "{\"jobid\":\"" + jobID + "\", \"name\":\"" + jobName + "\", \"nodes\":[]}",
 			archivedUserAccumulators != null ? archivedUserAccumulators : new StringifiedAccumulatorResult[0],
 			serializedUserAccumulators != null ? serializedUserAccumulators : Collections.emptyMap(),
+			resultPartitionDescriptors != null ? resultPartitionDescriptors : Collections.emptyMap(),
 			archivedExecutionConfig != null ? archivedExecutionConfig : new ArchivedExecutionConfigBuilder().build(),
 			isStoppable,
 			null,
